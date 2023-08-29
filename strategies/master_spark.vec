@@ -1,0 +1,5 @@
+# NAME=master_spark
+# DESCRIPTION=策略无双
+# SIMILARITY=0.991
+
+["func = lambda x: x.increase\n", "func = lambda x: x.increase_day\n", "def func(x):\n    ma10 = x.ma(10, 'close')\n    return x.increasement(ma10, x.close)\n\n", "def func(x):\n    ma10 = x.ma(10, 'volume')\n    return x.increasement(ma10, x.volume)\n\n"]

@@ -1,0 +1,5 @@
+# NAME=master_spark_plus
+# DESCRIPTION=
+# SIMILARITY=0.994
+
+["func = lambda x: x.increase\n", "func = lambda x: x.increase_day\n", "def func(x):\n    m10 = x.ma(10, 'close')\n    return x.increasement(m10, x.close)\n", "def func(x):\n    m10 = x.ma(10, 'volume')\n    return x.increasement(m10, x.volume)\n", "def func(x):\n    inc = x.increase_day\n    offset = x.increasement(x.open, x.high)\n    if inc > 0:\n        return offset - inc\n    return offset\n", "def func(x):\n    inc = x.increase_day\n    offset = x.increasement(x.open, x.low)\n    if inc > 0:\n        return offset\n    return offset - inc\n"]
