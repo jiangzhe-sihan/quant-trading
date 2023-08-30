@@ -9,6 +9,8 @@ def func(pool, stime, ctime, callback):
     from tools import aio_get
     from tools import gather
     from tools import create_semaphore
+    from tools import load_config
+    from configure import ChannelLoader
     import json
     import time
     import random
@@ -56,7 +58,7 @@ def func(pool, stime, ctime, callback):
             ret = callback()
             if ret != 0:
                 raise SystemError('download aborted.')
-        return r
+        return r, scode
     loop = new_event_loop()
     session = get_aio_session()
     sem = create_semaphore(16)
@@ -65,12 +67,17 @@ def func(pool, stime, ctime, callback):
     loop.run_until_complete(session.close())
     loop.close()
     res = {}
-    for i in task_res:
+    li_unquery = []
+    for i, scode in task_res:
         for j in range(len(i)):
             if i[j] == '{':
                 i = i[j:-2]
                 break
-        i = json.loads(i)
+        try:
+            i = json.loads(i)
+        except json.JSONDecodeError:
+            li_unquery.append(scode)
+            continue
         li = []
         code = i['data']['code']
         if i['data']['market'] == 1:
@@ -92,5 +99,8 @@ def func(pool, stime, ctime, callback):
             di['volume'] = int(row_data[5]) if row_data[5] else 0
             li.append(di)
         res[filename] = li
+    if li_unquery:
+        chn = ChannelLoader('../channels/').get_channel(load_config()['channel'])
+        res.update(chn.func(li_unquery, stime, ctime, callback))
     res['date_info'] = (stime, ctime)
     return res
