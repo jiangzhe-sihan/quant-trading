@@ -41,6 +41,7 @@ class SceneBacktest(Scene):
         self._market: Market | None = None
         self._player: Investor | None = None
         self._fig = [None, None, None]
+        self._vec_sp = None
         self._sp_func = None
         self._sp_func_pack = None
         # 初始化
@@ -59,7 +60,11 @@ class SceneBacktest(Scene):
         if event.widget != self:
             return
         pool = self._cfg.pool
-        if self._pool != pool:
+        if (
+                self._pool != pool or
+                (self._cfg.strategy_mode == 'vector' and
+                 self._vec_sp is not None and self._vec_sp != self._cfg.strategy)
+        ):
             self.stdio.clear()
             self.stdio.write('loading data..\n')
             r = self._load()
@@ -99,13 +104,19 @@ class SceneBacktest(Scene):
             for n in SceneSetting.get_instance().strategy:
                 sp = SceneSetting.get_instance().strategy_loader.get_strategy(n)
                 props.extend(sp.prop)
-            td = MarkerLoader(self._market, pool_path, props)
+            if not props:
+                td = MarkerLoader(self._market, pool_path)
+            else:
+                td = MarkerLoader(self._market, pool_path, props)
         else:
             td = MarkerLoader(self._market, pool_path)
         td.set_callback(CallbackFactory.get_instance(td))
         self.progressbar.load_thread(td)
         self._pool = pool
         self.date_entry.set(*date_info)
+        if not self._cfg.strategy_mode == 'vector':
+            return
+        self._vec_sp = self._cfg.strategy
         self._sp_func = self._sp_func_pack = None
 
     def _download_market(self, date_info):

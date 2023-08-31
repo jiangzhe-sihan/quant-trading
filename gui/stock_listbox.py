@@ -40,8 +40,8 @@ class StockListbox(tk.Listbox):
         mu.add_command(label='绘制k线', command=lambda: self._draw_kline(symbol))
         if SceneSetting.get_instance().strategy_mode == 'vector':
             mu.add_separator()
-            mu.add_command(label='添加买点(b)', command=lambda: self._add_bp(symbol))
-            mu.add_command(label='添加卖点(s)', command=lambda: self._add_sp(symbol))
+            mu.add_command(label='添加买点(b)', command=lambda: self._add_bp(symbol), foreground='green')
+            mu.add_command(label='添加卖点(s)', command=lambda: self._add_sp(symbol), foreground='crimson')
             di_bp = {}
             di_sp = {}
             for n in SceneSetting.get_instance().strategy:
@@ -53,9 +53,9 @@ class StockListbox(tk.Listbox):
             if di_bp or di_sp:
                 mu.add_separator()
                 if di_bp:
-                    mu.add_command(label='删除买点(b)', command=lambda: self._del_bp(di_bp))
+                    mu.add_command(label='删除买点(b)', command=lambda: self._del_bp(di_bp), foreground='gray')
                 if di_sp:
-                    mu.add_command(label='删除卖点(s)', command=lambda: self._del_sp(di_sp))
+                    mu.add_command(label='删除卖点(s)', command=lambda: self._del_sp(di_sp), foreground='darkred')
         mu.post(event.x_root, event.y_root)
 
     def _add_bp(self, symbol):
