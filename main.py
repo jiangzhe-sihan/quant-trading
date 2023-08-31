@@ -5,11 +5,11 @@ from gui.scene_index import SceneIndex
 from gui.scene import *
 from gui.listbox_search import ListboxSearcher
 from tools import init
-# from multiprocessing import freeze_support
+from multiprocessing import freeze_support
 
 
 if __name__ == '__main__':
-    # freeze_support()
+    freeze_support()
     # 初始化
     init()
     # 主窗口
