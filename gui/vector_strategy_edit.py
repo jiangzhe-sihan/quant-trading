@@ -34,6 +34,7 @@ class VectorStrategyEditor(tk.Frame):
         self._bt_confirm_vector = ttk.Button(self, text='保存', command=self._save)
         self._bt_confirm_vector.pack()
         self._li_dim: list[tk.Frame] = []
+        self._di_local = {}
 
     def _add(self):
         fm_dim_edit = tk.Frame(self._fm_dim)
@@ -51,18 +52,18 @@ class VectorStrategyEditor(tk.Frame):
         for i in range(len(self._li_dim)):
             text = self._li_dim[i].children['!text']
             content = text.get('0.0', 'end')
-            di = {}
+            self._di_local.clear()
             try:
-                exec(content, None, di)
+                exec(content, None, self._di_local)
             except Exception as e:
                 showerror(type(e).__name__ + f'在第{i+1}个维度', str(e), parent=self.winfo_toplevel())
                 text.focus()
                 return
-            if 'func' not in di:
+            if 'func' not in self._di_local:
                 showerror(f'错误在第{i+1}个维度', '没有定义名为`func`的方法', parent=self.winfo_toplevel())
                 text.focus()
                 return
-            func = di['func']
+            func = self._di_local['func']
             model = get_kline_test_example()
             try:
                 func(model)

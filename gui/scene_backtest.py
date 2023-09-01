@@ -154,7 +154,7 @@ class SceneBacktest(Scene):
         self.bell()
         act = askyesno(
             '更新数据',
-            '是否通过"{}"获取数据包\n{}\n从{}到{}的数据？'.format(self._cfg.channel, pool, *date_info),
+            '是否更新数据？\n\n频道: {}\n股票池: {}\n开始时间: {}\n结束时间: {}'.format(self._cfg.channel, pool, *date_info),
             parent=self.root
         )
         if act:
