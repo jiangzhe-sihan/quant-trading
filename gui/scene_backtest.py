@@ -44,6 +44,7 @@ class SceneBacktest(Scene):
         self._vec_sp = None
         self._sp_func = None
         self._sp_func_pack = None
+        self._mode = self._cfg.strategy_mode
         # 初始化
         self.bind('<Map>', self._update_config)
         self.bind('<Unmap>', self._stop_download)
@@ -61,9 +62,12 @@ class SceneBacktest(Scene):
             return
         pool = self._cfg.pool
         if (
-                self._pool != pool or
-                (self._cfg.strategy_mode == 'vector' and
-                 self._vec_sp is not None and self._vec_sp != self._cfg.strategy)
+            self._cfg.strategy_mode != self._mode or
+            self._pool != pool or
+            (
+                self._cfg.strategy_mode == 'vector' and
+                self._vec_sp is not None and self._vec_sp != self._cfg.strategy
+            )
         ):
             self.stdio.clear()
             self.stdio.write('loading data..\n')
@@ -72,6 +76,7 @@ class SceneBacktest(Scene):
                 self.stdio.write('load completed.\n')
             elif r == 1:
                 self.stdio.write('load failed.\n')
+        self._mode = self._cfg.strategy_mode
 
     def _load(self):
         pool = self._cfg.pool
