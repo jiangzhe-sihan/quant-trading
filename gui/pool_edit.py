@@ -236,7 +236,8 @@ class PoolEditor(tk.Frame):
                     'Referer': 'https://quote.eastmoney.com/',
                     'Host': 'searchadapter.eastmoney.com'
                 },
-                params={'input': code, 'type': 14, 'count': 5}
+                params={'input': code, 'type': 14, 'count': 5},
+                timeout=3
             )
             res = resp.json()
             self._quotation = tk.Menu(self._web_searcher, tearoff=0)
@@ -251,12 +252,13 @@ class PoolEditor(tk.Frame):
                     self._web_searcher.start_monitor()
 
                 self._quotation.add_command(label=f'[{quote_id}]{name}', command=command)
-            x = self._web_searcher.winfo_rootx()
-            y = self._web_searcher.winfo_rooty() + self._web_searcher.winfo_reqheight()
-            self._quotation.post(x, y)
+        except TimeoutError:
+            self._quotation = tk.Menu(self._web_searcher, tearoff=0)
+            self._quotation.add_command(label='网络连接失败', foreground='red')
         except:
             self._quotation = tk.Menu(self._web_searcher, tearoff=0)
             self._quotation.add_command(label='没有联网提示', foreground='red')
+        finally:
             x = self._web_searcher.winfo_rootx()
             y = self._web_searcher.winfo_rooty() + self._web_searcher.winfo_reqheight()
             self._quotation.post(x, y)
