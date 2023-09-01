@@ -86,6 +86,11 @@ class Vector:
                 return 0
         else:
             score_mod = 2 - mod_b / mod_a
-        score_angle = 1 - abs(acos(round(dot / mod_a / mod_b, 6))) / math.pi
+        cos = dot / mod_a / mod_b
+        if cos < -1:
+            cos = -1
+        elif cos > 1:
+            cos = 1
+        score_angle = 1 - acos(cos) / math.pi
         res = (score_mod + score_angle) / 2
         return res
