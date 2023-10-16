@@ -811,10 +811,8 @@ class Investor:
 
     def _t(self, symbol: str):
         if symbol in self._warehouse:
-            self._warehouse[symbol].current = self.market.tell[symbol].open
             volume = self._warehouse[symbol].volume
-            self._warehouse[symbol].underweight(volume)
-            self._warehouse[symbol].current = self.market.tell[symbol].close
+            self._warehouse[symbol].current = self.market.tell[symbol].low
             self._warehouse[symbol].overweight(volume)
         else:
             self._warehouse[symbol] = Order(self.market.tell[symbol].low, 100, self.market.date_handler.get_inter())

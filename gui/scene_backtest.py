@@ -9,6 +9,8 @@ from gui.thread_progress_bar import *
 from framework import *
 import backtest
 from tools import *
+from tkinter.filedialog import asksaveasfilename
+import csv
 
 
 class SceneBacktest(Scene):
@@ -295,9 +297,31 @@ class SceneBacktest(Scene):
                     tw.column('3', width=100)
                     tw.column('4', width=100)
                     tw.column('5', width=100)
-                    tw.pack(fill=tk.BOTH, expand=True)
+                    tw.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
+                    scb = ttk.Scrollbar(swnd)
+                    scb.config(command=tw.yview)
+                    tw.config(yscrollcommand=scb.set)
+                    scb.pack(fill=tk.Y, side=tk.LEFT)
                     _tw_insert(tw, self._player.history_operate)
+
+                    def call_menu(event):
+                        mb = tk.Menu(tw, tearoff=0)
+                        mb.add_command(label='导出为CSV', command=lambda: self._export_csv(swnd))
+                        mb.post(event.x_root, event.y_root)
+                    tw.bind('<Button-3>', call_menu)
         PlotThread.update()
+
+    def _export_csv(self, parent):
+        file_path = asksaveasfilename(
+            defaultextension='.csv', filetypes=[('Comma-Separated Values Files', '.csv')], initialfile='recoder.csv',
+            parent=parent
+        )
+        if file_path.strip() == '':
+            return
+        with open(file_path, 'w', encoding='utf-8', newline='') as fp:
+            writer = csv.writer(fp)
+            writer.writerows(self._player.history_operate)
+        showinfo('完成', '导出成功', parent=parent)
 
     def _clear_fig(self, num):
         self._fig[num] = None
