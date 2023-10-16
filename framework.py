@@ -596,6 +596,8 @@ class Order:
         self.amount = cost * volume  # 持有资金
         self.volume = volume  # 持仓量
         self.current = cost  # 现价
+        self.max_income_pct = 0  # 最大收益率
+        self.retracement = 0  # 最大回撤幅度
 
     @property
     def income(self):
@@ -603,7 +605,17 @@ class Order:
 
     @property
     def income_pct(self):
-        return self.income / self.amount if self.amount else 0
+        res = self.income / self.amount if self.amount else 0
+        if self.max_income_pct == 0:
+            self.max_income_pct = res
+        else:
+            if res > self.max_income_pct:
+                self.max_income_pct = res
+        if self.retracement == 0 and res < 0:
+            self.retracement = res
+        elif res < 0 and res < self.retracement:
+            self.retracement = res
+        return res
 
     @property
     def cost(self):
@@ -653,6 +665,7 @@ class Investor:
         self.history_floating: list[int | float] = []  # 历史记录浮盈列
         self.history_income_rate: list[int | float] = []  # 历史记录累计收益率列
         self.history_value: list[int | float] = []  # 历史记录单位净值列
+        self.history_operate: list[tuple[str, datetime.datetime, int, float, float, float]] = []  # 历史操作记录
 
     @property
     def static(self):
@@ -777,11 +790,18 @@ class Investor:
         self._sell(symbol)
 
     def _sell(self, symbol: str):
-        self._warehouse[symbol].current = self.market.tell[symbol].high
-        if self._warehouse[symbol].income > 0:
+        order = self._warehouse[symbol]
+        order.current = self.market.tell[symbol].high
+        if order.income_pct > 0:
             self._win += 1
         else:
             self._lose += 1
+        rec = (
+            symbol, order.create_time,
+            (self.market.today - order.create_time).days,
+            order.max_income_pct, order.retracement, order.income_pct
+        )
+        self.history_operate.append(rec)
 
     def t(self, symbol: str):
         """模拟做t"""

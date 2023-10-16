@@ -39,3 +39,7 @@ def get_kline_test_example():
 
 def get_strategy_path():
     return '../strategies/'
+
+
+def get_logging_path():
+    return 'log.txt'

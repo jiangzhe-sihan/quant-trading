@@ -292,16 +292,7 @@ class VedLoader(JsonLoader):
             raise KeyError('%s%s不存在' % (self._pwd, filename))
         path = self._pwd + filename + self._ex_name
         mtime = os.path.getmtime(path)
-        if filename not in self._json_instance:
-            fp = open(path, encoding='utf-8')
-            res = json.load(fp)
-            fp.close()
-            for i in range(len(res['buy'])):
-                res['buy'][i] = Vector(*res['buy'][i][:-1]), res['buy'][i][-1]
-            for i in range(len(res['sell'])):
-                res['sell'][i] = Vector(*res['sell'][i][:-1]), res['sell'][i][-1]
-            self._json_instance[filename] = (res, mtime)
-        elif mtime > self._json_instance[filename][1]:
+        if filename not in self._json_instance or mtime > self._json_instance[filename][1]:
             fp = open(path, encoding='utf-8')
             res = json.load(fp)
             fp.close()
@@ -358,48 +349,40 @@ class VectorStrategyLoader(ScriptLoader):
         return self._script_instance[filename][0]
 
     def append(self, filename: str, sample: KLine, loc: str):
+        if loc not in ('b', 's'):
+            raise ValueError(f'无法解析的添加位置"{loc}"')
+        sp = self.get_strategy(filename)
+        args = [f[1](sample) for f in sp.prop]
+        args.append(sp.simi)
+        fp = open(self._pwd + filename + '.ved', 'r+', encoding='utf-8')
+        group = json.load(fp)
         if loc == 'b':
-            sp = self.get_strategy(filename)
-            args = [f[1](sample) for f in sp.prop]
-            args.append(sp.simi)
-            fp = open(self._pwd + filename + '.ved', 'r+', encoding='utf-8')
-            group = json.load(fp)
             group['buy'].append(args)
             fp.seek(0)
             json.dump(group, fp)
             fp.close()
         elif loc == 's':
-            sp = self.get_strategy(filename)
-            args = [f[1](sample) for f in sp.prop]
-            args.append(sp.simi)
-            fp = open(self._pwd + filename + '.ved', 'r+', encoding='utf-8')
-            group = json.load(fp)
             group['sell'].append(args)
             fp.seek(0)
             json.dump(group, fp)
             fp.close()
-        else:
-            raise ValueError(f'无法解析的添加位置"{loc}"')
 
     def pop(self, filename: str, loc: str, index: int = 0):
+        if loc not in ('b', 's'):
+            raise ValueError(f'无法解析的弹出位置"{loc}"')
+        fp = open(self._pwd + filename + '.ved', 'r+', encoding='utf-8')
+        group = json.load(fp)
+        fp.close()
         if loc == 'b':
-            fp = open(self._pwd + filename + '.ved', 'r+', encoding='utf-8')
-            group = json.load(fp)
-            fp.close()
             group['buy'].pop(index)
             fp = open(self._pwd + filename + '.ved', 'w+', encoding='utf-8')
             json.dump(group, fp)
             fp.close()
         elif loc == 's':
-            fp = open(self._pwd + filename + '.ved', 'r+', encoding='utf-8')
-            group = json.load(fp)
-            fp.close()
             group['sell'].pop(index)
             fp = open(self._pwd + filename + '.ved', 'w+', encoding='utf-8')
             json.dump(group, fp)
             fp.close()
-        else:
-            raise ValueError(f'无法解析的弹出位置"{loc}"')
 
     def hit_list(self, filename: str, sample: KLine):
         vl = VedLoader()

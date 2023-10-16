@@ -10,11 +10,18 @@ from typing import Iterable
 import requests
 import aiohttp
 import asyncio
+import logging
 
 from general_thread import ProgressThread, MultiThreadLoader
 
 
 def init():
+    logging.basicConfig(
+        filename='log.txt',
+        format='%(asctime)s [%(levelname)s] %(message)s',
+        level=logging.INFO,
+        encoding='utf-8'
+    )
     if not path.exists('../channels'):
         mkdir('../channels')
     if not path.exists('../data'):

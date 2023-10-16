@@ -6,6 +6,8 @@ from gui.interact_candle import *
 from gui.scene import SceneSetting
 from gui.subwindow import SubWindow
 
+import logging
+
 
 class StockListbox(tk.Listbox):
     def __init__(self, master, **kw):
@@ -53,9 +55,9 @@ class StockListbox(tk.Listbox):
             if di_bp or di_sp:
                 mu.add_separator()
                 if di_bp:
-                    mu.add_command(label='删除买点(b)', command=lambda: self._del_bp(di_bp), foreground='gray')
+                    mu.add_command(label='删除买点(b)', command=lambda: self._del_bp(di_bp, symbol), foreground='gray')
                 if di_sp:
-                    mu.add_command(label='删除卖点(s)', command=lambda: self._del_sp(di_sp), foreground='darkred')
+                    mu.add_command(label='删除卖点(s)', command=lambda: self._del_sp(di_sp, symbol), foreground='darkred')
         mu.post(event.x_root, event.y_root)
 
     def _add_bp(self, symbol):
@@ -63,24 +65,30 @@ class StockListbox(tk.Listbox):
         for n in SceneSetting.get_instance().strategy:
             SceneSetting.get_instance().strategy_loader.append(n, kline, 'b')
         showinfo('完成', '添加成功', parent=self.winfo_toplevel())
+        logging.info(f'{kline.date} {symbol} ADD_BUY')
 
     def _add_sp(self, symbol):
         kline = self._info[symbol]
         for n in SceneSetting.get_instance().strategy:
             SceneSetting.get_instance().strategy_loader.append(n, kline, 's')
         showinfo('完成', '添加成功', parent=self.winfo_toplevel())
+        logging.info(f'{kline.date} {symbol} ADD_SELL')
 
-    def _del_bp(self, bps):
+    def _del_bp(self, bps, symbol):
+        kline = self._info[symbol]
         for n, lip in bps.items():
             for i in lip:
                 SceneSetting.get_instance().strategy_loader.pop(n, 'b', i)
         showinfo('完成', '删除成功', parent=self.winfo_toplevel())
+        logging.info(f'{kline.date} {symbol} DEL_BUY')
 
-    def _del_sp(self, sps):
+    def _del_sp(self, sps, symbol):
+        kline = self._info[symbol]
         for n, lip in sps.items():
             for i in lip:
                 SceneSetting.get_instance().strategy_loader.pop(n, 's', i)
         showinfo('完成', '删除成功', parent=self.winfo_toplevel())
+        logging.info(f'{kline.date} {symbol} DEL_SELL')
 
     def _show_evaluate(self, symbol):
         if self._eval_wnd is not None:

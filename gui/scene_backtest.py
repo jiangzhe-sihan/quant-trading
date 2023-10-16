@@ -1,5 +1,6 @@
 from gui.date_interval_entry import DateIntervalEntry
 from gui.scene import Scene, SceneSetting
+from gui.signal_explorer import _tw_insert
 from gui.stdguiio import StdGuiIO
 from gui.check_board import *
 from gui.signal_explorer import *
@@ -245,6 +246,7 @@ class SceneBacktest(Scene):
         ckb.append('持仓收益率')
         ckb.append('累计收益率')
         ckb.append('单位净值')
+        ckb.append('操作记录')
         ckb.pack(fill=tk.BOTH, expand=True)
         option = []
 
@@ -276,6 +278,25 @@ class SceneBacktest(Scene):
                     fig = backtest.draw_unit_worth(self._player)
                     self._fig[2] = fig
                     fig.canvas.mpl_connect('close_event', lambda x: self._clear_fig(2))
+                case '操作记录':
+                    swnd = tk.Toplevel(self.winfo_toplevel())
+                    swnd.title('操作记录')
+                    swnd.geometry('800x400')
+                    tw = ttk.Treeview(swnd, show='headings', columns=('0', '1', '2', '3', '4', '5'))
+                    tw.heading('0', text='标的')
+                    tw.heading('1', text='建仓时间')
+                    tw.heading('2', text='持仓周期')
+                    tw.heading('3', text='最大收益')
+                    tw.heading('4', text='最大回撤')
+                    tw.heading('5', text='收益率')
+                    tw.column('0', width=100)
+                    tw.column('1', width=100)
+                    tw.column('2', width=100)
+                    tw.column('3', width=100)
+                    tw.column('4', width=100)
+                    tw.column('5', width=100)
+                    tw.pack(fill=tk.BOTH, expand=True)
+                    _tw_insert(tw, self._player.history_operate)
         PlotThread.update()
 
     def _clear_fig(self, num):
