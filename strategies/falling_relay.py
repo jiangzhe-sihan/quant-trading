@@ -11,6 +11,8 @@ def func(self):
         if ma5 > ma10:
             if offset > .425 and .085 > v.increase > .07:
                 self.li_sell.add(k)
+            elif offset > .364 and v.increase > .09 and -.001 < v.increase_day < .001:
+                self.li_sell.add(k)
             elif .366 > offset > .343 and v.increase > .07 and (
                 v.increase_day < .02 or .08 < v.increase_day < .09 or v.increase_day > .095
             ):
@@ -165,9 +167,7 @@ def func(self):
                     self.li_buy.add(k)
                 elif -.112 < offset < -.095 and -.051 < v.increase < -.048 < v.increase_day < -.044:
                     self.li_buy.add(k)
-                elif -.191 < offset < -.076 and (
-                        -.025 < v.increase < -.024 or -.02 < v.increase < -.012
-                ) and v.increase_day < -.021:
+                elif -.191 < offset < -.076 and -.026 < v.increase < -.012 and v.increase_day < -.023:
                     self.li_buy.add(k)
                 elif -.088 < offset < -.073:
                     if -.019 < v.increase < -.018 and -.02 < v.increase_day < -.018:
@@ -265,7 +265,7 @@ def func(self):
             elif offset < -.154 and (
                     -.078 < v.increase < -.076 or -.075 < v.increase < -.049
             ) and (
-                    -.069 < v.increase_day < -.053 or -.044 < v.increase_day < -.02 or
+                    -.069 < v.increase_day < -.053 or -.041 < v.increase_day < -.02 or
                     -.019 < v.increase_day < -.015
             ):
                 self.li_buy.add(k)
