@@ -674,7 +674,12 @@ class Investor:
 
     def get_value(self):
         """返回单位净值"""
-        return self._value
+        level = 100000000
+        pr = 2
+        mod = self._value // (level / pow(10, pr))
+        if mod > pow(10, pr):
+            return f'{mod / pow(10, pr):.2f}亿'
+        return f'{self._value: .4f}'
 
     def get_income_rate(self):
         """返回累计收益率"""
@@ -733,11 +738,12 @@ class Investor:
         n = len(self._warehouse)
         rate = 0
         for k in self.li_sell:
-            rate += self._sell_account(k)
+            ac = self._sell_account(k)
+            rate += ac
+            self._income_rate += ac
         if n:
             rate /= n
-        # 更新累计收益率和单位净值
-        self._income_rate += rate
+        # 更新单位净值
         self._value *= (1 + rate)
         # 记录今日浮盈、累计收益率和单位净值
         self.li_sell.clear()

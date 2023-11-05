@@ -232,7 +232,7 @@ class SceneBacktest(Scene):
         if td_load.code != 0:
             return
         self.stdio.write('backtest completed.\n')
-        self.stdio.write('单位净值: {:.4f}\n'.format(self._player.get_value()))
+        self.stdio.write('单位净值: {}\n'.format(self._player.get_value()))
         self.stdio.write('胜率:       {:.2f} %\n'.format(self._player.win_rate * 100))
         self.stdio.write('累计收益率: {:.4f}\n'.format(self._player.get_income_rate()))
         bt_draw_plt = ttk.Button(self.fm_result_button, text='绘制图表', command=self._draw_plt)
