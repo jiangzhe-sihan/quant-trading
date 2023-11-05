@@ -2,3 +2,4 @@ src/
 data/
 .idea
 configure.json
+.gitignore
