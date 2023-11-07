@@ -829,10 +829,11 @@ class Investor:
         rate = 0
         for k, v in self._warehouse.items():
             self.sell(k)
-            rate += v.income_pct
+            ac = v.income_pct
+            rate += ac
+            self._income_rate += ac
         if n:
             rate /= n
-        self._income_rate += rate
         self._value *= (1 + rate)
         self.history_date.append(self.market.date_handler.get_inter())
         self.history_floating.append(self.floating)
