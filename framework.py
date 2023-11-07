@@ -481,8 +481,8 @@ class Market:
                 if ret != 0:
                     raise SystemError('load aborted.')
         self._dates = sorted(self._data.keys())
-        # ceil(get_max_cpu_count() * .5)
-        self._create_slice()
+        n = ceil(get_max_cpu_count() * .5)
+        self._create_slice(n)
         self._flush_index()
 
     @property
