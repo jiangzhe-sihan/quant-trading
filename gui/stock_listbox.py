@@ -108,6 +108,7 @@ class StockListbox(tk.Listbox):
         self._eval_wnd.title(symbol)
         self._eval_wnd.geometry('250x400')
         self._eval_wnd.attributes('-toolwindow', 2)
+        self._eval_wnd.bind('<Destroy>', self._cancel_eval_window)
         tv = Treeview(self._eval_wnd, show='headings', columns=('1', '2'))
         tv.heading('1', text='属性名', anchor='w')
         tv.heading('2', text='属性值', anchor='w')
@@ -123,6 +124,9 @@ class StockListbox(tk.Listbox):
         tv.tag_configure('False', background='#DFDFDF')
         tv.place(relwidth=1.0, relheight=1.0)
         self.wait_window(self._eval_wnd)
+        self._eval_wnd = None
+
+    def _cancel_eval_window(self, event=None):
         self._eval_wnd = None
 
     def _draw_kline(self, symbol):

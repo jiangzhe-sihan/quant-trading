@@ -64,6 +64,8 @@ class SceneBacktest(Scene):
         if event.widget != self:
             return
         pool = self._cfg.pool
+        if pool in CommonPool.refer:
+            pool = pool.replace('*', '').strip()
         if (
             self._cfg.strategy_mode != self._mode or
             self._pool != pool or
@@ -83,6 +85,8 @@ class SceneBacktest(Scene):
 
     def _load(self):
         pool = self._cfg.pool
+        if pool in CommonPool.refer:
+            pool = pool.replace('*', '').strip()
         pool_path = '../data/' + pool
         if not (path.exists(pool_path) and path.exists(pool_path + '/' + 'date_info.pkl')):
             self.bell()
@@ -102,6 +106,8 @@ class SceneBacktest(Scene):
 
     def _load_market(self):
         pool = self._cfg.pool
+        if pool in CommonPool.refer:
+            pool = pool.replace('*', '').strip()
         pool_path = '../data/' + pool + '/'
         date_info = load_pkl(pool_path + 'date_info.pkl')
         stime = datetime.datetime(*date_info[0])
@@ -145,6 +151,8 @@ class SceneBacktest(Scene):
         res = td_download.res
         self.stdio.write('download completed.\n')
         self.stdio.write('writing data..\n')
+        if pool in CommonPool.refer:
+            pool = pool.replace('*', '').strip()
         save_path = '../data/' + pool + '/'
         td_write = MarketWriter(li_pool, res, save_path)
         td_write.set_callback(CallbackFactory.get_instance(td_write))
@@ -190,6 +198,8 @@ class SceneBacktest(Scene):
         act = askyesno('回测', dsc, parent=self.root)
         if not act:
             return
+        if pool in CommonPool.refer:
+            pool = pool.replace('*', '').strip()
         pool_path = '../data/' + pool
         true_date_info = load_pkl(pool_path + '/' + 'date_info.pkl')
         if date_info[0] < true_date_info[0] or date_info[1] > true_date_info[1]:

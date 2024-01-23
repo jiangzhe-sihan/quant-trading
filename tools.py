@@ -1,6 +1,7 @@
 import json
 import pickle
 import random
+import re
 import time
 import winreg
 
@@ -215,7 +216,18 @@ def get_stock_list(fs):
     ua = get_user_agent()
     url = 'http://{}.push2.eastmoney.com/api/qt/clist/get?pn=1&pz={}&po=1&np=1&fltt=2&invt=2&fid=f3&{}&fields=f12,f13,f14'
     session = requests.Session()
-    res = session.get(url.format(random.randint(1, 99), 20, fs), headers={'User-Agent': ua, 'host': '73.push2.eastmoney.com'})
+    n = random.randint(1, 99)
+    res = session.get(url.format(n, 20, fs), headers={'User-Agent': ua, 'host': f'{n}.push2.eastmoney.com'})
     count = res.json()['data']['total']
-    res = session.get(url.format(random.randint(1, 99), count, fs), headers={'User-Agent': ua, 'host': '73.push2.eastmoney.com'})
-    return res.json()
+    n = random.randint(1, 99)
+    resp = session.get(url.format(n, count, fs), headers={'User-Agent': ua, 'host': f'{n}.push2.eastmoney.com'})
+    res = []
+    for i in resp.json()['data']['diff']:
+        res.append(f'{i["f13"]}.{i["f12"]}')
+    return res
+
+
+def is_legal_file_name(filename: str):
+    if len(re.findall(r'[\\/:*?"<>|]', filename)) > 0:
+        return False
+    return True

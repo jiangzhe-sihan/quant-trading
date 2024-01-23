@@ -107,6 +107,8 @@ class KLine:
         self.low = src['low']  # 最低价
         self.close = src['close']  # 收盘价
         self.volume = src['volume']  # 成交量
+        self.amount = src.get('amount')  # 成交额
+        self.hs = src.get('hs')  # 换手
         self.previous: KLine | None = None  # 上一日k
         self.next: KLine | None = None  # 下一日k
         self.vec: Vector | None = None  # 向量值
@@ -155,6 +157,16 @@ class KLine:
     def limit_down(self):
         """一字跌停"""
         return self.increase <= -.04 and self.close == self.low == self.open
+
+    @property
+    def market_value(self):
+        """市值"""
+        return self.volume * self.close / self.hs
+
+    @property
+    def lb(self):
+        """量比"""
+        return self.volume / self.previous.ma(5, 'volume')
 
     def ma(self, cycle: int, prop: str):
         """移动均线"""
@@ -660,6 +672,8 @@ class Investor:
         self._income_rate = 0  # 累计收益率
         self._value = 1  # 单位净值
         self._static = {}  # 静态变量
+        self._price_buy = 'low'  # 买入价格（默认最低价）
+        self._price_sell = 'high'  # 卖出价格（默认最高价）
         # 历史记录
         self.history_date: list[datetime.datetime] = []  # 历史记录日期列
         self.history_floating: list[int | float] = []  # 历史记录浮盈列
@@ -671,6 +685,14 @@ class Investor:
     def static(self):
         """静态变量的获取方法"""
         return self._static
+
+    def set_price_buy(self, buy: str):
+        """设置买入价（open、high、low、close）"""
+        self._price_buy = buy
+
+    def set_price_sell(self, sell: str):
+        """设置卖出价（open、high、low、close）"""
+        self._price_sell = sell
 
     def get_value(self):
         """返回单位净值"""
@@ -773,6 +795,19 @@ class Investor:
             return res
         return 0
 
+    def _get_target_price(self, symbol, target):
+        """获得买价"""
+        match target:
+            case 'open':
+                price = self.market.tell[symbol].open
+            case 'high':
+                price = self.market.tell[symbol].high
+            case 'low':
+                price = self.market.tell[symbol].low
+            case default:
+                price = self.market.tell[symbol].close
+        return price
+
     def buy(self, symbol: str):
         """模拟买入"""
         if symbol not in self.market.tell:
@@ -781,10 +816,11 @@ class Investor:
 
     def _buy(self, symbol: str):
         volume = 100
+        price = self._get_target_price(symbol, self._price_buy)
         if symbol not in self._warehouse:
-            self._warehouse[symbol] = Order(self.market.tell[symbol].low, volume, self.market.date_handler.get_inter())
+            self._warehouse[symbol] = Order(price, volume, self.market.date_handler.get_inter())
         else:
-            self._warehouse[symbol].current = self.market.tell[symbol].low
+            self._warehouse[symbol].current = price
             self._warehouse[symbol].overweight(volume)
 
     def sell(self, symbol: str):
@@ -797,7 +833,8 @@ class Investor:
 
     def _sell(self, symbol: str):
         order = self._warehouse[symbol]
-        order.current = self.market.tell[symbol].high
+        price = self._get_target_price(symbol, self._price_sell)
+        order.current = price
         if order.income_pct > 0:
             self._win += 1
         else:
@@ -816,12 +853,18 @@ class Investor:
         self._t(symbol)
 
     def _t(self, symbol: str):
+        price = self._get_target_price(symbol, self._price_buy)
         if symbol in self._warehouse:
             volume = self._warehouse[symbol].volume
-            self._warehouse[symbol].current = self.market.tell[symbol].low
+            self._warehouse[symbol].current = price
             self._warehouse[symbol].overweight(volume)
         else:
-            self._warehouse[symbol] = Order(self.market.tell[symbol].low, 100, self.market.date_handler.get_inter())
+            self._warehouse[symbol] = Order(price, 100, self.market.date_handler.get_inter())
+
+    def clear(self):
+        """清仓"""
+        for k in self._warehouse:
+            self.li_sell.add(k)
 
     def settle(self):
         """结算定档"""

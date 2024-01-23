@@ -11,8 +11,8 @@ import configure
 from gui.pool_edit import PoolEditor
 from gui.subwindow import SubWindow
 from gui.vector_strategy_edit import VectorStrategyEditor
-from template import get_strategy_template, get_strategy_path
-from tools import load_config, save_config, get_stock_list
+from template import get_strategy_template, get_strategy_path, CommonPool
+from tools import load_config, save_config, get_stock_list, is_legal_file_name
 
 
 class Scene(tk.Frame):
@@ -239,14 +239,17 @@ class SceneSetting(Scene):
                 showinfo('失败', '请输入池名称', parent=swnd)
                 return
             name = et_name.get().strip()
+            if not is_legal_file_name(name):
+                showinfo('失败', '非法文件名', parent=swnd)
+                return
             try:
                 match option.get():
                     case '导入沪深300':
-                        li = get_stock_list('fs=b:BK0500')['data']['diff']
+                        li = get_stock_list('fs=b:BK0500')
                     case '导入中证500':
-                        li = get_stock_list('fs=b:BK0701+f:!2')['data']['diff']
+                        li = get_stock_list('fs=b:BK0701+f:!2')
                     case '导入上证50':
-                        li = get_stock_list('fs=b:BK0611')['data']['diff']
+                        li = get_stock_list('fs=b:BK0611')
                     case default:
                         li = []
             except Exception as e:
@@ -256,11 +259,8 @@ class SceneSetting(Scene):
             if os.path.exists(pwd + name + '.json'):
                 showinfo('失败', '股票池已存在', parent=swnd)
                 return
-            res = []
-            for i in li:
-                res.append(f'{i["f13"]}.{i["f12"]}')
             fp = open(pwd + name + '.json', 'w+')
-            json.dump(res, fp)
+            json.dump(li, fp)
             fp.close()
             showinfo('成功', '股票池已创建', parent=swnd)
             self.update_config()
@@ -334,13 +334,14 @@ class SceneSetting(Scene):
         lb_desc.pack(side=tk.LEFT)
         et_desc = tk.Entry(fm_desc)
         et_desc.pack(side=tk.RIGHT)
-        fm_simi = tk.Frame(fm_entry)
-        fm_simi.pack(pady=5, fill=tk.X)
-        lb_simi = tk.Label(fm_simi, text='默认相似度')
-        lb_simi.pack(side=tk.LEFT)
-        et_simi = tk.Entry(fm_simi)
-        et_simi.insert(0, '0.98')
-        et_simi.pack(side=tk.RIGHT)
+        if self.strategy_mode == 'vector':
+            fm_simi = tk.Frame(fm_entry)
+            fm_simi.pack(pady=5, fill=tk.X)
+            lb_simi = tk.Label(fm_simi, text='默认相似度')
+            lb_simi.pack(side=tk.LEFT)
+            et_simi = tk.Entry(fm_simi)
+            et_simi.insert(0, '0.98')
+            et_simi.pack(side=tk.RIGHT)
 
         def confirm():
             if et_name.get().strip() == '':
@@ -354,6 +355,9 @@ class SceneSetting(Scene):
                     ex_name = '.vec'
                 case default:
                     ex_name = '.py'
+            if not is_legal_file_name(name):
+                showerror('失败', '非法文件名', parent=swnd)
+                return
             if os.path.exists(pwd + name + ex_name):
                 showerror('失败', '策略已存在', parent=swnd)
                 return
@@ -415,9 +419,17 @@ class SceneSetting(Scene):
         self.update_config()
 
     def update_config(self):
+        self.cb_pool.select_clear()
+        self.cb_pool.icursor(0)
+        self.cb_channel.select_clear()
+        self.cb_channel.icursor(0)
+        self.cb_strategy.select_clear()
+        self.cb_strategy.icursor(0)
         cfg = load_config()
         self.str_pool.set(cfg['pool'])
-        self.cb_pool.config(values=self.pool_loader.get_pools_list())
+        li_pool = list(CommonPool.refer.keys())
+        li_pool.extend(self.pool_loader.get_pools_list())
+        self.cb_pool.config(values=li_pool)
         self.str_channel.set(cfg['channel'])
         self.cb_channel.config(values=self.channel_loader.get_channel_list())
         match self.strategy_mode:
@@ -460,6 +472,9 @@ class SceneSetting(Scene):
         pool_name = self.cb_pool.get()
         if pool_name in self._swnd_pool:
             self._swnd_pool[pool_name].focus()
+            return
+        if pool_name in CommonPool.refer:
+            showinfo(pool_name, f'该默认池会联网查询{pool_name}中的标的。', parent=self.winfo_toplevel())
             return
         pool = '../pools/' + pool_name + '.json'
         swnd = SubWindow(self.root)

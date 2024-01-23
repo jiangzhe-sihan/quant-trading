@@ -12,6 +12,8 @@ prop = []
 
 
 def func(self):
+    self.set_price_buy('low')
+    self.set_price_sell('high')
     for k, v in self.market.tell.items():
         # write your strategy here
         pass
@@ -43,3 +45,11 @@ def get_strategy_path():
 
 def get_logging_path():
     return 'log.txt'
+
+
+class CommonPool:
+    refer = {
+        '** 沪深主板 **': 'fs=m:0+t:6+f:!2,m:1+t:2+f:!2',
+        '** 创业板 **': 'fs=m:0+t:80+f:!2',
+        '** 科创板 **': 'fs=m:1+t:23+f:!2',
+    }

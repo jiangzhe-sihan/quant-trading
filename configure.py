@@ -6,6 +6,7 @@ from typing import Iterable
 
 from framework import Investor, KLine, MarketSlice
 from vector import Vector
+from template import CommonPool
 
 
 def vec_filter(args: tuple[MarketSlice, list[tuple[Vector, float]], list[tuple[Vector, float]]]):
@@ -265,7 +266,11 @@ class StockPoolLoader(JsonLoader):
         return self.get_json_list()
 
     def get_pool(self, filename: str):
-        return self.get_json(filename)
+        fs = CommonPool.refer.get(filename)
+        if fs is None:
+            return self.get_json(filename)
+        from tools import get_stock_list
+        return get_stock_list(fs)
 
 
 class VedLoader(JsonLoader):
