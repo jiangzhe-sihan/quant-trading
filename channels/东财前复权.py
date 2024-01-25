@@ -97,6 +97,8 @@ def func(pool, stime, ctime, callback):
             di['high'] = float(row_data[3])
             di['low'] = float(row_data[4])
             di['volume'] = int(row_data[5]) if row_data[5] else 0
+            di['amount'] = float(row_data[6]) if row_data[6] else 0
+            di['hs'] = float(row_data[10]) if row_data[10] else 0
             li.append(di)
         res[filename] = li
     if li_unquery:
