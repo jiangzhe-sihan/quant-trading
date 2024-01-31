@@ -752,10 +752,6 @@ class Investor:
         # 模拟做t操作
         while self.li_t:
             self.t(self.li_t.pop())
-        # 更新持仓价格
-        for k, v in self._warehouse.items():
-            if k in self.market.tell:
-                v.current = self.market.tell[k].close
         # 计算今日收益率
         n = len(self._warehouse)
         rate = 0
@@ -767,6 +763,10 @@ class Investor:
             rate /= n
         # 更新单位净值
         self._value *= (1 + rate)
+        # 更新持仓价格
+        for k, v in self._warehouse.items():
+            if k in self.market.tell:
+                v.current = self.market.tell[k].close
         # 记录今日浮盈、累计收益率和单位净值
         self.li_sell.clear()
         self.history_date.append(self.market.date_handler.get_inter())
