@@ -3,10 +3,18 @@
 
 
 prop = [
-    ('open', lambda x: x.open),
-    ('high', lambda x: x.high),
-    ('low', lambda x: x.low),
     ('close', lambda x: x.close),
+    ('increase', lambda x: x.increase),
+    ('increase_day', lambda x: x.increase_day),
+    ('ma5', lambda x: x.ma(5, 'close')),
+    ('ma10', lambda x: x.ma(10, 'close')),
+    ('ma5>ma10?', lambda x: x.ma(5, 'close') > x.ma(10, 'close')),
+    ('bia5', lambda x: (x.close - x.ma(5, 'close')) / x.ma(5, 'close')),
+    ('bia10', lambda x: (x.close - x.ma(10, 'close')) / x.ma(10, 'close')),
+    ('bia_min_5', lambda x: (x.close - x.interval_min(5, 'close')) / x.interval_min(5, 'close')),
+    ('bia_min_10', lambda x: (x.close - x.interval_min(10, 'close')) / x.interval_min(10, 'close')),
+    ('bia_max_5', lambda x: (x.close - x.interval_max(5, 'close')) / x.interval_max(5, 'close')),
+    ('bia_max_10', lambda x: (x.close - x.interval_max(10, 'close')) / x.interval_max(10, 'close'))
 ]
 
 
@@ -21,6 +29,10 @@ def func(self):
     stg_ndq = sl.get_strategy('nasdaq_signal')
     stg_zz500 = sl.get_strategy('zz500_signal')
     for k, v in self.market.tell.items():
+        # 测试
+        # if '160723' in k:
+        #     stg_oil.func(self, k, v)
+        # 混合
         if '501300' in k:
             stg_dlb.func(self, k, v)
         elif '512200' in k:

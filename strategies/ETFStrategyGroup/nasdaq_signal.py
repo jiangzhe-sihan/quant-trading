@@ -11,16 +11,24 @@ def func(self, k, v):
     if ma5 > ma10:
         his = v.interval_min(10, 'close')
         quota = (v.close - his) / his
-        if quota > .048:
-            if -.004 < v.increase_day < -.002 and v.close > ma5:
-                self.li_sell.add(k)
+        if quota > .084 or .07 > quota > .048:
+            if v.close > ma5:
+                if -.004 < v.increase_day < -.002:
+                    self.li_sell.add(k)
+                if .018 < v.increase < .019 and .038 < (v.close - ma10) / ma10 < .039:
+                    self.li_sell.add(k)
+            if .006 > (v.close - ma10) / ma10 > .005 and v.increase < 0:
+                self.li_buy.add(k)
+        elif .017 > quota > .012:
+            if -.003 > (v.close - ma10) / ma10 > -.004:
+                self.li_buy.add(k)
         if (v.close - ma10) / ma10 > .103:
             self.li_sell.add(k)
     else:
         his = v.interval_max(10, 'close')
         quota = (v.close - his) / his
-        if quota < -.092 or -.081 < quota < -.065 or -.063 < quota < -.054:
-            if -.004 < v.increase_day < -.001 or -.039 < v.increase < -.028:
+        if quota < -.092 or -.081 < quota < -.065 or -.063 < quota < -.059 or -.058 < quota < -.054:
+            if -.004 < v.increase_day < -.0012 or -.039 < v.increase < -.028:
                 if not (self.market.date_handler.month == 12 and self.market.date_handler.day):
                     self.li_buy.add(k)
             elif v.increase_day > v.increase > .024:
@@ -30,7 +38,11 @@ def func(self, k, v):
             if -.049 < (v.close - ma10) / ma10 < -.042 and (
                     -.025 < v.increase < -.021) and -.013 < v.increase_day < -.008:
                 self.li_buy.add(k)
-        if (v.close - ma10) / ma10 < -.09 or -.08 < (v.close - ma10) / ma10 < -.059:
+            if -.014 < (v.close - ma10) / ma10 < -.012:
+                self.li_buy.add(k)
+        if (
+            (v.close - ma10) / ma10 < -.09 or -.08 < (v.close - ma10) / ma10 < -.059
+            ):
             self.li_buy.add(k)
         elif (v.close - ma10) / ma10 > .031 and v.increase > .056 and -.005 < v.increase_day < .002:
             self.li_sell.add(k)
