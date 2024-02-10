@@ -30,8 +30,8 @@ def func(self):
     stg_zz500 = sl.get_strategy('zz500_signal')
     for k, v in self.market.tell.items():
         # 测试
-        # if '160723' in k:
-        #     stg_oil.func(self, k, v)
+        # if '513100' in k:
+        #     stg_ndq.func(self, k, v)
         # 混合
         if '501300' in k:
             stg_dlb.func(self, k, v)
