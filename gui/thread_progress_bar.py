@@ -37,7 +37,7 @@ class ThreadProgressBar(ttk.Progressbar):
                 self.stop()
                 self.config(mode='determinate')
                 self._progress.set(progress)
-            self.update_idletasks()
+            self.update()
             self.after(10, self._wait_thread_determinate)
         else:
             self._progress.set(0)
