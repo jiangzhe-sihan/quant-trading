@@ -168,6 +168,26 @@ class KLine:
         """量比"""
         return self.volume / self.previous.ma(5, 'volume')
 
+    def count(self, func, interval=0):
+        """统计满足条件的k线数量"""
+        if interval < 0:
+            raise ValueError('统计区间不能小于0！')
+        res = 0
+        if interval == 0:
+            ptr = self
+            while ptr is not None:
+                if func(ptr):
+                    res += 1
+                ptr = ptr.previous
+        else:
+            ptr = self
+            while ptr is not None and interval > 0:
+                if func(ptr):
+                    res += 1
+                ptr = ptr.previous
+                interval -= 1
+        return res
+
     def ma(self, cycle: int, prop: str):
         """移动均线"""
         total = 0
