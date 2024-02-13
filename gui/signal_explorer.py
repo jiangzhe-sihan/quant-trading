@@ -1,3 +1,6 @@
+import csv
+from tkinter.filedialog import asksaveasfilename
+
 from gui.date_entry import *
 from tkinter.messagebox import *
 from gui.subwindow import *
@@ -105,7 +108,7 @@ class SignalExplorer(ttk.Frame):
         self._bt_copy_page.grid(row=0, column=0)
         self._bt_copy_today = ttk.Button(self._fm_option_button, text='复制今天', command=self._copy_today)
         self._bt_copy_today.grid(row=0, column=1)
-        self._bt_copy_all = ttk.Button(self._fm_option_button, text='复制每一天', command=self._copy_all)
+        self._bt_copy_all = ttk.Button(self._fm_option_button, text='导出操作信号', command=self._copy_all)
         self._bt_copy_all.grid(row=1, column=0)
         self._bt_market_view = ttk.Button(self._fm_option_button, text='市场浏览', command=self._market_view)
         self._bt_market_view.grid(row=1, column=1)
@@ -214,9 +217,27 @@ class SignalExplorer(ttk.Frame):
         showinfo('完成', '今日内容已复制。', parent=self.winfo_toplevel())
 
     def _copy_all(self):
-        self.clipboard_clear()
-        self.clipboard_append(str(self._player.strategy_history))
-        showinfo('完成', '全部内容已复制。', parent=self.winfo_toplevel())
+        file_path = asksaveasfilename(
+            defaultextension='.csv', filetypes=[('Comma-Separated Values Files', '.csv')], initialfile='operate.csv',
+            parent=self.winfo_toplevel()
+        )
+        if file_path.strip() == '':
+            return
+        with open(file_path, 'w', encoding='utf-8', newline='') as fp:
+            writer = csv.writer(fp)
+            for k, v in self._player.strategy_history.items():
+                for i in range(3):
+                    for rec in v[i]:
+                        row = [rec, k]
+                        match i:
+                            case 0:
+                                row.append('buy')
+                            case 1:
+                                row.append('sell')
+                            case default:
+                                row.append('t')
+                        writer.writerow(row)
+        showinfo('完成', '操作记录已导出。', parent=self.winfo_toplevel())
 
     def _market_view(self):
         if self._market_viewing:
