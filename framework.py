@@ -188,7 +188,7 @@ class KLine:
                 interval -= 1
         return res
 
-    def ma(self, cycle: int, prop: str):
+    def ma(self, cycle: int, func: str | FunctionType):
         """移动均线"""
         total = 0
         ptr = self
@@ -196,7 +196,10 @@ class KLine:
         while i < cycle:
             if ptr is None:
                 break
-            total += ptr.__getattribute__(prop)
+            if isinstance(func, str):
+                total += ptr.__getattribute__(func)
+            else:
+                total += func(ptr)
             ptr = ptr.previous
             i += 1
         return total / i
@@ -225,7 +228,7 @@ class KLine:
             n -= 1
         return True
 
-    def get_history_value(self, span: int, prop: str):
+    def get_history_value(self, span: int, func: str | FunctionType):
         """获取历史属性值"""
         ptr = self
         while span:
@@ -233,36 +236,54 @@ class KLine:
                 break
             ptr = ptr.previous
             span -= 1
-        return ptr.__getattribute__(prop)
+        if isinstance(func, str):
+            return ptr.__getattribute__(func)
+        return func(ptr)
 
-    def interval_max(self, span: int, prop: str):
+    def interval_max(self, span: int, func: str | FunctionType):
         """获取属性的区间最大值"""
         ptr = self
-        res = ptr.__getattribute__(prop)
+        if isinstance(func, str):
+            res = ptr.__getattribute__(func)
+        else:
+            res = func(ptr)
         while span:
             if ptr.previous is None:
                 break
             ptr = ptr.previous
-            if ptr.__getattribute__(prop) > res:
-                res = ptr.__getattribute__(prop)
+            if isinstance(func, str):
+                if ptr.__getattribute__(func) > res:
+                    res = ptr.__getattribute__(func)
+            else:
+                ref = func(ptr)
+                if ref > res:
+                    res = ref
             span -= 1
         return res
 
-    def interval_min(self, span: int, prop: str):
+    def interval_min(self, span: int, func: str | FunctionType):
         """获取属性的区间最小值"""
         ptr = self
-        res = ptr.__getattribute__(prop)
+        if isinstance(func, str):
+            res = ptr.__getattribute__(func)
+        else:
+            res = func(ptr)
         while span:
             if ptr.previous is None:
                 break
             ptr = ptr.previous
-            if ptr.__getattribute__(prop) < res:
-                res = ptr.__getattribute__(prop)
+            if isinstance(func, str):
+                if ptr.__getattribute__(func) < res:
+                    res = ptr.__getattribute__(func)
+            else:
+                ref = func(ptr)
+                if ref < res:
+                    res = ref
             span -= 1
         return res
 
     def rsi(self, m1: int = 6, m2: int = 12, m3: int = 24):
-        """返回股票的rsi指标值"""
+        """计算rsi指标值"""
         if not m1 < m2 < m3:
             raise ValueError('参数必须从小到大排列！')
         res = []
@@ -284,6 +305,17 @@ class KLine:
                 ptr = ptr.next
             res.append(0 if a == 0 else a / (a + b))
         return res
+
+    def atr(self, n: int = 14):
+        """计算atr指标值"""
+        def f_tr(x: KLine):
+            return max(
+                max(x.high - x.low, abs(x.previous.close - x.high if x.previous else x.close - x.high)),
+                abs(x.previous.close - x.low if x.previous else x.close - x.low)
+            )
+        tr = f_tr(self)
+        atr = self.ma(n, f_tr)
+        return tr, atr
 
     def get_datetime(self):
         return pd.to_datetime(self.date)
