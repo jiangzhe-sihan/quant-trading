@@ -7,11 +7,12 @@ class ThreadProgressBar(ttk.Progressbar):
     """线程进度条"""
     def __init__(self, master, **kw):
         super().__init__(master, **kw)
-        self._progress = tk.IntVar()
-        self.config(variable=self._progress)
         self._td = None
         self._statu = tk.BooleanVar()
         self._idle_count = 0
+        self._count = 0
+        self._max = 0
+        self._start_flag = False
 
     def is_running(self):
         return self._td is not None and self._td.is_alive()
@@ -19,7 +20,7 @@ class ThreadProgressBar(ttk.Progressbar):
     def _wait_thread_indeterminate(self):
         if self.is_running():
             self.update_idletasks()
-            self.after(10, self._wait_thread_indeterminate)
+            self.after(20, self._wait_thread_indeterminate)
         else:
             self.stop()
             self.config(mode='determinate')
@@ -27,20 +28,27 @@ class ThreadProgressBar(ttk.Progressbar):
 
     def _wait_thread_determinate(self):
         if self.is_running():
-            length = self.cget('maximum')
-            progress = int(length * self._td.progress) if self._td.progress < 1 else length
+            progress, maximum = self._td.progress
+            if maximum != self._max:
+                self.config(maximum=maximum)
+                self._max = maximum
             self._idle_count += 1
             if self._idle_count > 60 and progress == 0:
-                self.config(mode='indeterminate')
-                self.start()
+                if not self._start_flag:
+                    self.config(mode='indeterminate')
+                    self.start()
+                    self._start_flag = True
             else:
-                self.stop()
-                self.config(mode='determinate')
-                self._progress.set(progress)
-            self.update()
-            self.after(10, self._wait_thread_determinate)
+                if self._start_flag:
+                    self.stop()
+                    self.config(mode='determinate')
+                    self._start_flag = False
+                self.step(progress - self._count)
+                self._count = progress
+            self.update_idletasks()
+            self.after(20, self._wait_thread_determinate)
         else:
-            self._progress.set(0)
+            self.stop()
             self._exit_thread()
 
     def _exit_thread(self):
@@ -57,6 +65,7 @@ class ThreadProgressBar(ttk.Progressbar):
         self.update()
 
     def load_thread(self, td):
+        self._count = 0
         if not td.daemon:
             td.daemon = True
         self._td = td

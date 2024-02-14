@@ -52,21 +52,6 @@ def write_data(pool: list[str],
                 raise SystemError('write aborted.')
 
 
-class ProgressCalc:
-    def __init__(self, length: int):
-        self._total = length
-        self._count = 0
-        self._progress = 0
-
-    def get_progress(self, current: int, length: int):
-        if current == self._count and length == self._total:
-            return self._progress
-        self._count = current
-        self._total = length
-        self._progress = self._count / self._total
-        return self._progress
-
-
 class ProgressThread(threading.Thread):
     def __init__(self, func, args: tuple = None, kw: dict = None,
                  length: int = 200, callback=None):
@@ -77,7 +62,6 @@ class ProgressThread(threading.Thread):
         self._count = 0
         self._total = length
         self._callback = callback
-        self._calc = ProgressCalc(length)
         self.res = None
         self.exception = None
         self.code = 0
@@ -87,7 +71,7 @@ class ProgressThread(threading.Thread):
 
     @property
     def progress(self):
-        return self._calc.get_progress(self._count, self._total)
+        return self._count, self._total
 
     def set_callback(self, func):
         self._callback = func
@@ -150,7 +134,7 @@ class MarkerLoader(ProgressThread):
 
     @property
     def progress(self):
-        return self._calc.get_progress(self._count, self._market.len)
+        return self._count, self._market.len
 
 
 class BacktestThread(ProgressThread):
@@ -161,7 +145,7 @@ class BacktestThread(ProgressThread):
 
     @property
     def progress(self):
-        return self._calc.get_progress(self._count, len(self._market))
+        return self._count, len(self._market)
 
 
 class MarketSliceProcessor(ProgressThread):
