@@ -33,11 +33,13 @@ def func(self):
         '510510': lambda: sl.get_strategy('zz500_signal'),
         '002837': lambda: sl.get_strategy('nvk')
     })
-    from re import match
     for k, v in self.market.tell.items():
-        name = match(r'\[(.*?)\.(.*?)\]', k).group(2)
+        name = k.split(']')[0].split('.')[1]
         # 测试
         # if name != '002837':
         #     continue
         # 调用
-        self.static['ref'][name]().func(self, k, v)
+        f = self.static['ref'].get(name)
+        if f is None:
+            continue
+        f().func(self, k, v)
