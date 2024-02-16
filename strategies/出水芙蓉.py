@@ -7,7 +7,9 @@ prop = [
     ('量比', lambda x: x.lb),
     ('市值', lambda x: x.market_value),
     ('换手', lambda x: x.hs),
-    ('index', lambda x: 10000 * x.lb * x.low / x.market_value)
+    ('index', lambda x: 10000 * x.lb * x.low / x.market_value),
+    ('tpp', lambda x: 2.5 * sum(x.atr(1)) + x.low),
+    ('ltpp', lambda x: 2.5 * sum(x.atr()) + x.low)
 ]
 
 

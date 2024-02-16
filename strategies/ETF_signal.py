@@ -16,7 +16,8 @@ prop = [
     ('bia_min_10', lambda x: (x.close - x.interval_min(10, 'close')) / x.interval_min(10, 'close')),
     ('bia_max_5', lambda x: (x.close - x.interval_max(5, 'close')) / x.interval_max(5, 'close')),
     ('bia_max_10', lambda x: (x.close - x.interval_max(10, 'close')) / x.interval_max(10, 'close')),
-    ('bia_mid_10', lambda x: abs(x.close / x.interval_max(10, 'close') + x.close / x.interval_min(10, 'close') - 2))
+    ('bia_mid_10', lambda x: abs(x.close / x.interval_max(10, 'close') + x.close / x.interval_min(10, 'close') - 2)),
+    ('tpp', lambda x: 2.5 * sum(x.atr()) + x.low)
 ]
 
 
