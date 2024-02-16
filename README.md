@@ -46,6 +46,33 @@ python main.py
 ```
 或是在`Windows`下运行配置部分中的`start.bat`来启动应用程序。
 ## 更新记录
+### 2024/2/16
+- 支持向周期属性（移动均线，历史值，区间最值）中传入自定方法
+> 下面是一个示例：
+> ```python
+> ma(5, lambda x: x.close) -> 计算5日收盘价均线
+> ```
+> 等效于
+> ```python
+> ma(5, 'close') -> 计算5日收盘价均线
+> ```
+
+> 使用自定义方法能够更加灵活地统计K线属性：
+> ```python
+> # 计算真实波幅值的方法
+> def f_tr(x: KLine):
+>     return max(
+>         max(x.high - x.low, abs(x.previous.close - x.high if x.previous else x.close - x.high)),
+>         abs(x.previous.close - x.low if x.previous else x.close - x.low)
+>     )
+> ```
+> 向`ma`属性中传入该方法可轻松地计算ATR
+> ```python
+> ma(14, f_tr) -> 计算平均真实波幅（ATR）
+> ```
+- 新增K线属性：
+  - atr(n=14) -> 计算平均真实波幅（ATR）
+  - ema(n, func) -> （测试）计算移动指数平均值
 ### 2024/2/13
 - 新增K线属性：
   - count(func, interval=0) -> 统计区间内符合条件的K线数量。默认统计全部K线。
