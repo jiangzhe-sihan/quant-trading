@@ -282,6 +282,13 @@ class KLine:
             span -= 1
         return res
 
+    def ema(self, n: int, func: str | FunctionType):
+        """指数移动平均"""
+        if n == 1:
+            return self.get_history_value(0, func)
+        fac = ((n + 1) * 2 ** (n - 1) + 1) / ((n + 1) ** 2 * 2 ** (n - 1))
+        return self.get_history_value(n - 1, func) * fac + self.ema(n - 1, func) * (1 - fac)
+
     def rsi(self, m1: int = 6, m2: int = 12, m3: int = 24):
         """计算rsi指标值"""
         if not m1 < m2 < m3:
