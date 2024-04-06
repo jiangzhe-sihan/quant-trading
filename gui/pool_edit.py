@@ -307,13 +307,15 @@ class PoolEditor(tk.Frame):
             self.progress_bar.load_thread(td)
             for index, en, co, res in td.res:
                 resp = json.loads(res)
-                count = len(resp['QuotationCodeTable']['Data'])
+                data = resp['QuotationCodeTable']['Data']
+                count = len(data) if data is not None else 0
                 if count == 0:
-                    self.fresh_item(index, f'[{co}] [-退-]')
+                    display = f'[{co}] [-退-]'
+                    self.fresh_item(index, display)
+                    self._li_pool[index] = co
                     self.get_lsb().itemconfig(index, fg='red')
                     self.update()
                     continue
-                data = resp['QuotationCodeTable']['Data']
                 name = None
                 for d in data:
                     if d['QuoteID'] == co:
@@ -325,10 +327,15 @@ class PoolEditor(tk.Frame):
                             name = d
                             break
                 if name is None:
-                    self.fresh_item(index, f'[{co}] [-退-]')
+                    display = f'[{co}] [-退-]'
+                    self.fresh_item(index, display)
+                    self._li_pool[index] = co
                     self.get_lsb().itemconfig(index, fg='red')
                     self.update()
-                self.fresh_item(index, f'[{name["QuoteID"]}]{name["Name"]}')
+                    continue
+                display = f'[{name["QuoteID"]}]{name["Name"]}'
+                self.fresh_item(index, display)
+                self._li_pool[index] = name["QuoteID"]
                 self.update()
         session.close()
         self._lsb.config(cursor='arrow')
