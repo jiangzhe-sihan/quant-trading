@@ -377,7 +377,7 @@ class SceneSetting(Scene):
                     editor.pack()
                 case default:
                     model = get_strategy_template(name, desc)
-                    fp = open(pwd + name + ex_name, 'w+')
+                    fp = open(pwd + name + ex_name, 'w+', encoding='utf-8')
                     fp.write(model)
                     fp.close()
                     showinfo('成功', '策略已创建', parent=swnd)
