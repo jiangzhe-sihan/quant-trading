@@ -324,6 +324,10 @@ class KLine:
         atr = self.ma(n, f_tr)
         return tr, atr
 
+    def bia(self, n: int, func: str | FunctionType):
+        """计算指标乖离率"""
+        return self.increasement(self.ma(n, func), self.get_history_value(0, func))
+
     def get_datetime(self):
         return pd.to_datetime(self.date)
 
