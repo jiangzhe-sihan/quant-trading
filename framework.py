@@ -297,10 +297,19 @@ class KLine:
 
     def ema(self, n: int, func: str | FunctionType, *args, **kw):
         """指数移动平均"""
-        if n == 1:
-            return self.get_history_value(0, func, *args, **kw)
-        fac = ((n + 1) ** 2 - 2) / ((n + 1) ** 2 * 2 ** (n - 1))
-        return self.get_history_value(n - 1, func, *args, **kw) * fac + self.ema(n - 1, func, *args, **kw) * (1 - fac)
+        a = 0
+        b = 0
+        for i in range(n):
+            a += self.get_history_value(i, func, *args, **kw) * (n - i)
+            b += (i + 1)
+        return a / b
+
+    def sma(self, n: int, m: int, func: str | FunctionType, *args, **kw):
+        """加权移动平均"""
+        res = m * self.get_history_value(n - 1, func, *args, **kw) / 2
+        for i in range(n - 1):
+            res = (m * self.get_history_value(n - i - 2, func, *args, **kw) + (i + 1) * res) / (i + 3)
+        return res
 
     def rsi(self, m1: int = 6, m2: int = 12, m3: int = 24):
         """计算rsi指标值"""
@@ -347,12 +356,12 @@ class KLine:
     def _lwr1(self, n: int = 9, m1: int = 3):
         return self.ma(m1, 'rsv', n)
 
-    def _lwr2(self, n: int = 3):
-        return self.ma(n, '_lwr1')
+    def _lwr2(self, n: int = 3, m1: int = 9, m2: int = 3):
+        return self.ma(n, '_lwr1', m1, m2)
 
     def lwr(self, n: int = 9, m1: int = 3, m2: int = 3):
         """计算lwr指标值"""
-        return self._lwr1(n, m1), self._lwr2(m2)
+        return self._lwr1(n, m1), self._lwr2(m2, n, m1)
 
     def bia(self, n: int, func: str | FunctionType):
         """计算指标乖离率"""
