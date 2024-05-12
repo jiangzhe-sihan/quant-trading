@@ -188,7 +188,7 @@ class KLine:
                 interval -= 1
         return res
 
-    def ma(self, cycle: int, func: str | FunctionType):
+    def ma(self, cycle: int, func: str | FunctionType, *args, **kw):
         """移动均线"""
         total = 0
         ptr = self
@@ -197,7 +197,11 @@ class KLine:
             if ptr is None:
                 break
             if isinstance(func, str):
-                total += ptr.__getattribute__(func)
+                val = ptr.__getattribute__(func)
+                if isinstance(val, (int, float)):
+                    total += val
+                else:
+                    total += val(*args, **kw)
             else:
                 total += func(ptr)
             ptr = ptr.previous
@@ -228,7 +232,7 @@ class KLine:
             n -= 1
         return True
 
-    def get_history_value(self, span: int, func: str | FunctionType):
+    def get_history_value(self, span: int, func: str | FunctionType, *args, **kw):
         """获取历史属性值"""
         ptr = self
         while span:
@@ -237,10 +241,13 @@ class KLine:
             ptr = ptr.previous
             span -= 1
         if isinstance(func, str):
-            return ptr.__getattribute__(func)
+            val = ptr.__getattribute__(func)
+            if isinstance(val, (int, float)):
+                return val
+            return val(*args, **kw)
         return func(ptr)
 
-    def interval_max(self, span: int, func: str | FunctionType):
+    def interval_max(self, span: int, func: str | FunctionType, *args, **kw):
         """获取属性的区间最大值"""
         ptr = self
         if isinstance(func, str):
@@ -252,8 +259,11 @@ class KLine:
                 break
             ptr = ptr.previous
             if isinstance(func, str):
-                if ptr.__getattribute__(func) > res:
-                    res = ptr.__getattribute__(func)
+                val = ptr.__getattribute__(func)
+                if not isinstance(val, (int, float)):
+                    val = val(*args, **kw)
+                if val > res:
+                    res = val
             else:
                 ref = func(ptr)
                 if ref > res:
@@ -261,7 +271,7 @@ class KLine:
             span -= 1
         return res
 
-    def interval_min(self, span: int, func: str | FunctionType):
+    def interval_min(self, span: int, func: str | FunctionType, *args, **kw):
         """获取属性的区间最小值"""
         ptr = self
         if isinstance(func, str):
@@ -273,8 +283,11 @@ class KLine:
                 break
             ptr = ptr.previous
             if isinstance(func, str):
-                if ptr.__getattribute__(func) < res:
-                    res = ptr.__getattribute__(func)
+                val = ptr.__getattribute__(func)
+                if not isinstance(val, (int, float)):
+                    val = val(*args, **kw)
+                if val < res:
+                    res = val
             else:
                 ref = func(ptr)
                 if ref < res:
@@ -282,12 +295,12 @@ class KLine:
             span -= 1
         return res
 
-    def ema(self, n: int, func: str | FunctionType):
+    def ema(self, n: int, func: str | FunctionType, *args, **kw):
         """指数移动平均"""
         if n == 1:
-            return self.get_history_value(0, func)
+            return self.get_history_value(0, func, *args, **kw)
         fac = ((n + 1) ** 2 - 2) / ((n + 1) ** 2 * 2 ** (n - 1))
-        return self.get_history_value(n - 1, func) * fac + self.ema(n - 1, func) * (1 - fac)
+        return self.get_history_value(n - 1, func, *args, **kw) * fac + self.ema(n - 1, func, *args, **kw) * (1 - fac)
 
     def rsi(self, m1: int = 6, m2: int = 12, m3: int = 24):
         """计算rsi指标值"""
@@ -313,16 +326,33 @@ class KLine:
             res.append(0 if a == 0 else a / (a + b))
         return res
 
+    def _tr(self):
+        return max(
+            max(self.high - self.low, abs(self.previous.close - self.high if self.previous else self.close - self.high)),
+            abs(self.previous.close - self.low if self.previous else self.close - self.low)
+        )
+
     def atr(self, n: int = 14):
         """计算atr指标值"""
-        def f_tr(x: KLine):
-            return max(
-                max(x.high - x.low, abs(x.previous.close - x.high if x.previous else x.close - x.high)),
-                abs(x.previous.close - x.low if x.previous else x.close - x.low)
-            )
-        tr = f_tr(self)
-        atr = self.ma(n, f_tr)
+        tr = self._tr()
+        atr = self.ma(n, '_tr')
         return tr, atr
+
+    def rsv(self, n: int = 9):
+        """计算rsv指标值"""
+        imax = self.interval_max(n, 'high')
+        imin = self.interval_min(n, 'low')
+        return 100 * (imax - self.close) / (imax - imin) if imax != imin else 0
+
+    def _lwr1(self, n: int = 9, m1: int = 3):
+        return self.ma(m1, 'rsv', n)
+
+    def _lwr2(self, n: int = 3):
+        return self.ma(n, '_lwr1')
+
+    def lwr(self, n: int = 9, m1: int = 3, m2: int = 3):
+        """计算lwr指标值"""
+        return self._lwr1(n, m1), self._lwr2(m2)
 
     def bia(self, n: int, func: str | FunctionType):
         """计算指标乖离率"""
