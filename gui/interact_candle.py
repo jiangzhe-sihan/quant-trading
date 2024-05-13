@@ -139,7 +139,7 @@ class InterCandle:  # 定义一个交互K线图类
             idx_range = self.idx_range
         plot_data = self.data.iloc[idx_start - idx_range:idx_start + 1]
         if idx_range < 200:
-            ap = [mpf.make_addplot(plot_data[['ma5', 'ma10', 'ma20']], ax=self._ax_price)]
+            ap = [mpf.make_addplot(plot_data[['ma5', 'ma10', 'ma20']], ax=self._ax_price, width=1)]
             if self._signal is not None:
                 ap.append(
                     mpf.make_addplot(
