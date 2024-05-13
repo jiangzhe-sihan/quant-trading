@@ -54,6 +54,14 @@ class SceneBacktest(Scene):
         self.bind('<Destroy>', self._stop_download)
         self.date_entry.de_start_time.set((2015, 1, 1))
         self.date_entry.de_end_time.set(Date().date)
+        # 回测数据记录
+        self._value = 0
+        self._win_rate = 0
+        self._sum_inc = 0
+        self._max_lose = 0
+        self._max_inc = 0
+        self._avg_lose = 0
+        self._avg_inc = 0
 
     def _stop_download(self, event):
         if event.widget != self:
@@ -241,14 +249,39 @@ class SceneBacktest(Scene):
         self.progressbar.load_thread(td_load)
         if td_load.code != 0:
             return
+        # 读取回测统计
+        value = self._player.value
+        win_rate = self._player.win_rate
+        sum_inc = self._player.get_income_rate()
+        max_win = self._player.max_win
+        max_lose = self._player.max_lose
+        avg_win = self._player.avg_win
+        avg_lose = self._player.avg_lose
+        # 显示信息
         self.stdio.write('backtest completed.\n')
-        self.stdio.write('单位净值: {}\n'.format(self._player.get_value()))
-        self.stdio.write('胜率:       {:.2f} %\n'.format(self._player.win_rate * 100))
-        self.stdio.write('累计收益率: {:.4f}\n'.format(self._player.get_income_rate()))
+        self.stdio.write('单位净值:  {}  {}\n'.format(self._player.get_value(), self._get_udc(value, '_value')))
+        self.stdio.write('胜率:       {:.2f} %  {}\n'.format(win_rate * 100, self._get_udc(win_rate, '_win_rate')))
+        self.stdio.write('累计收益率: {:.4f}  {}\n'.format(sum_inc, self._get_udc(sum_inc, '_sum_inc')))
+        self.stdio.write('最大正收益: {:.2f} %  {}\n'.format(max_win * 100, self._get_udc(max_win, '_max_inc')))
+        self.stdio.write('最大负收益: {:.2f} %  {}\n'.format(max_lose * 100, self._get_udc(max_lose, '_max_lose')))
+        self.stdio.write('平均正收益: {:.2f} %  {}\n'.format(avg_win * 100, self._get_udc(avg_win, '_avg_inc')))
+        self.stdio.write('平均负收益: {:.2f} %  {}\n'.format(avg_lose * 100, self._get_udc(avg_lose, '_avg_lose')))
+        # 更新记录
+        self._value, self._win_rate, self._sum_inc = value, win_rate, sum_inc
+        self._max_inc, self._max_lose, self._avg_inc, self._avg_lose = max_win, max_lose, avg_win, avg_lose
+        # 添加查看按钮
         bt_draw_plt = ttk.Button(self.fm_result_button, text='绘制图表', command=self._draw_plt)
         bt_draw_plt.grid(row=0, column=0, padx=2)
         bt_history = ttk.Button(self.fm_result_button, text='查看操作记录', command=self._inquire_history)
         bt_history.grid(row=0, column=1, padx=2)
+
+    def _get_udc(self, value, prop):
+        ref = self.__getattribute__(prop)
+        if value > ref:
+            return '/\\'
+        elif value < ref:
+            return '\\/'
+        return ''
 
     def _draw_plt(self):
         self.disable()

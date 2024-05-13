@@ -773,6 +773,10 @@ class Investor:
         self._li_unsale: set[str] = set()  # 因为跌停而没有卖出的股票
         self._income_rate = 0  # 累计收益率
         self._value = 1  # 单位净值
+        self._sum_win = 0  # 累计正收益
+        self._sum_lose = 0  # 累计负收益
+        self._max_win = 0  # 最大正收益
+        self._max_lose = 0  # 最大负收益
         self._static = {}  # 静态变量
         self._price_buy = 'low'  # 买入价格（默认最低价）
         self._price_sell = 'high'  # 卖出价格（默认最高价）
@@ -782,6 +786,34 @@ class Investor:
         self.history_income_rate: list[int | float] = []  # 历史记录累计收益率列
         self.history_value: list[int | float] = []  # 历史记录单位净值列
         self.history_operate: list[tuple[str, datetime.datetime, int, float, float, float]] = []  # 历史操作记录
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def sum_win(self):
+        return self._sum_win
+
+    @property
+    def sum_lose(self):
+        return self._sum_lose
+
+    @property
+    def max_win(self):
+        return self._max_win
+
+    @property
+    def max_lose(self):
+        return self._max_lose
+
+    @property
+    def avg_win(self):
+        return self._sum_win / self._win if self._win else 0
+
+    @property
+    def avg_lose(self):
+        return self._sum_lose / self._lose if self._lose else 0
 
     @property
     def static(self):
@@ -937,14 +969,21 @@ class Investor:
         order = self._warehouse[symbol]
         price = self._get_target_price(symbol, self._price_sell)
         order.current = price
-        if order.income_pct > 0:
+        incr = order.income_pct
+        if incr > 0:
             self._win += 1
+            self._sum_win += incr
+            if incr > self._max_win:
+                self._max_win = incr
         else:
             self._lose += 1
+            self._sum_lose += incr
+            if incr < self._max_lose:
+                self._max_lose = incr
         rec = (
             symbol, order.create_time,
             (self.market.today - order.create_time).days,
-            order.max_income_pct, order.retracement, order.income_pct
+            order.max_income_pct, order.retracement, incr
         )
         self.history_operate.append(rec)
 

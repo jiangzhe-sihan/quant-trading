@@ -8,6 +8,7 @@ class StdGuiIO(tk.Text):
         self.config(spacing1=12)
         self.config(wrap='word')
         self.config(state='disabled')
+        self.config(tabs='16')
         self.bind('<Button-3>', self._right_click)
 
     def write(self, string):
