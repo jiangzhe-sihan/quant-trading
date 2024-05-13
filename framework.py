@@ -775,6 +775,8 @@ class Investor:
         self._value = 1  # 单位净值
         self._sum_win = 0  # 累计正收益
         self._sum_lose = 0  # 累计负收益
+        self._li_win = []  # 收益率列表
+        self._li_lose = []  # 负收益率列表
         self._max_win = 0  # 最大正收益
         self._max_lose = 0  # 最大负收益
         self._static = {}  # 静态变量
@@ -814,6 +816,14 @@ class Investor:
     @property
     def avg_lose(self):
         return self._sum_lose / self._lose if self._lose else 0
+
+    @property
+    def mid_win(self):
+        return self._li_win[len(self._li_win) // 2] if self._li_win else 0
+
+    @property
+    def mid_lose(self):
+        return self._li_lose[len(self._li_lose) // 2] if self._li_lose else 0
 
     @property
     def static(self):
@@ -973,11 +983,13 @@ class Investor:
         if incr > 0:
             self._win += 1
             self._sum_win += incr
+            self._li_win.append(incr)
             if incr > self._max_win:
                 self._max_win = incr
         else:
             self._lose += 1
             self._sum_lose += incr
+            self._li_lose.append(incr)
             if incr < self._max_lose:
                 self._max_lose = incr
         rec = (
@@ -1023,6 +1035,8 @@ class Investor:
         self.history_floating.append(self.floating)
         self.history_income_rate.append(self._income_rate)
         self.history_value.append(self._value)
+        self._li_win.sort()
+        self._li_lose.sort()
 
     @property
     def floating(self):
