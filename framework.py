@@ -1005,13 +1005,10 @@ class Investor:
             self._li_lose.append(incr)
             if incr < self._max_lose:
                 self._max_lose = incr
-        retrace = order.retracement
-        if retrace < self._max_down:
-            self._max_down = retrace
         rec = (
             symbol, order.create_time,
             (self.market.today - order.create_time).days,
-            order.max_income_pct, retrace, incr
+            order.max_income_pct, order.retracement, incr
         )
         self.history_operate.append(rec)
 
@@ -1059,6 +1056,8 @@ class Investor:
         """浮动收益率"""
         res = 0
         for v in self._warehouse.values():
+            if v.retracement < self._max_down:
+                self._max_down = v.retracement
             res += v.income_pct
         n = len(self._warehouse)
         return 0 if n == 0 else res / n
