@@ -779,6 +779,7 @@ class Investor:
         self._li_lose = []  # 负收益率列表
         self._max_win = 0  # 最大正收益
         self._max_lose = 0  # 最大负收益
+        self._max_down = 0  # 最大回撤
         self._static = {}  # 静态变量
         self._price_buy = 'low'  # 买入价格（默认最低价）
         self._price_sell = 'high'  # 卖出价格（默认最高价）
@@ -824,6 +825,18 @@ class Investor:
     @property
     def mid_lose(self):
         return self._li_lose[len(self._li_lose) // 2] if self._li_lose else 0
+
+    @property
+    def max_down(self):
+        return self._max_down
+
+    @property
+    def exp_inc(self):
+        avg_inc = (self.avg_win + 1) * (self.avg_lose + 1)
+        mid_inc = (self.mid_win + 1) * (self.mid_lose + 1)
+        exp_win = (avg_inc + mid_inc) / 2 - 1
+        exp_lose = (self.max_lose + self.max_down) / 2
+        return exp_win * self.win_rate + exp_lose * (1 - self.win_rate)
 
     @property
     def static(self):
@@ -992,10 +1005,13 @@ class Investor:
             self._li_lose.append(incr)
             if incr < self._max_lose:
                 self._max_lose = incr
+        retrace = order.retracement
+        if retrace < self._max_down:
+            self._max_down = retrace
         rec = (
             symbol, order.create_time,
             (self.market.today - order.create_time).days,
-            order.max_income_pct, order.retracement, incr
+            order.max_income_pct, retrace, incr
         )
         self.history_operate.append(rec)
 

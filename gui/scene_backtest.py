@@ -60,6 +60,7 @@ class SceneBacktest(Scene):
         self._sum_inc = 0
         self._max_lose = 0
         self._max_inc = 0
+        self._max_down = 0
         self._avg_lose = 0
         self._avg_inc = 0
         self._mid_lose = 0
@@ -258,11 +259,12 @@ class SceneBacktest(Scene):
         sum_inc = self._player.get_income_rate()
         max_win = self._player.max_win
         max_lose = self._player.max_lose
+        max_down = self._player.max_down
         avg_win = self._player.avg_win
         avg_lose = self._player.avg_lose
         mid_win = self._player.mid_win
         mid_lose = self._player.mid_lose
-        exp_inc = (((avg_win+1)*(avg_lose+1) + (mid_win+1)*(mid_lose+1)) / 2 - 1) * win_rate + max_lose * (1-win_rate)
+        exp_inc = self._player.exp_inc
         # 显示信息
         self.stdio.write('backtest completed.\n')
         self.stdio.write('单位净值:  {}  {}\n'.format(self._player.get_value(), self._get_udc(value, '_value')))
@@ -270,13 +272,14 @@ class SceneBacktest(Scene):
         self.stdio.write('累计收益率: {:.4f}  {}\n'.format(sum_inc, self._get_udc(sum_inc, '_sum_inc')))
         self.stdio.write('最大正收益: {:.2f} %  {}\n'.format(max_win * 100, self._get_udc(max_win, '_max_inc')))
         self.stdio.write('最大负收益: {:.2f} %  {}\n'.format(max_lose * 100, self._get_udc(max_lose, '_max_lose')))
+        self.stdio.write('最大回撤: {:.2f} %  {}\n'.format(max_down * 100, self._get_udc(max_down, '_max_down')))
         self.stdio.write('平均正收益: {:.2f} %  {}\n'.format(avg_win * 100, self._get_udc(avg_win, '_avg_inc')))
         self.stdio.write('平均负收益: {:.2f} %  {}\n'.format(avg_lose * 100, self._get_udc(avg_lose, '_avg_lose')))
         self.stdio.write('中位正收益: {:.2f} %  {}\n'.format(mid_win * 100, self._get_udc(mid_win, '_mid_inc')))
         self.stdio.write('中位负收益: {:.2f} %  {}\n'.format(mid_lose * 100, self._get_udc(mid_lose, '_mid_lose')))
         self.stdio.write('预期收益率: {:.2f} %  {}\n'.format(exp_inc * 100, self._get_udc(exp_inc, '_exp_inc')))
         # 更新记录
-        self._value, self._win_rate, self._sum_inc = value, win_rate, sum_inc
+        self._value, self._win_rate, self._sum_inc, self._max_down = value, win_rate, sum_inc, max_down
         self._max_inc, self._max_lose, self._avg_inc, self._avg_lose = max_win, max_lose, avg_win, avg_lose
         self._mid_inc, self._mid_lose, self._exp_inc = mid_win, mid_lose, exp_inc
         # 添加查看按钮
