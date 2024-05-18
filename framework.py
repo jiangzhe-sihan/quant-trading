@@ -1024,7 +1024,7 @@ class Investor:
         n = len(self._warehouse)
         rate = 0
         for k, v in self._warehouse.items():
-            self.sell(k)
+            self._sell(k)
             ac = v.income_pct
             rate += ac
             self._income_rate += ac
