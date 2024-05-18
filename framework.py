@@ -954,15 +954,18 @@ class Investor:
 
     def _get_target_price(self, symbol, target):
         """获得买价"""
+        kl = self.market.tell.get(symbol)
+        if kl is None:
+            return
         match target:
             case 'open':
-                price = self.market.tell[symbol].open
+                price = kl.open
             case 'high':
-                price = self.market.tell[symbol].high
+                price = kl.high
             case 'low':
-                price = self.market.tell[symbol].low
+                price = kl.low
             case default:
-                price = self.market.tell[symbol].close
+                price = kl.close
         return price
 
     def buy(self, symbol: str):
@@ -991,7 +994,8 @@ class Investor:
     def _sell(self, symbol: str):
         order = self._warehouse[symbol]
         price = self._get_target_price(symbol, self._price_sell)
-        order.current = price
+        if price is not None:
+            order.current = price
         incr = order.income_pct
         if incr > 0:
             self._win += 1
