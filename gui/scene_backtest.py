@@ -64,6 +64,7 @@ class SceneBacktest(Scene):
         self._avg_inc = 0
         self._mid_lose = 0
         self._mid_inc = 0
+        self._exp_inc = 0
 
     def _stop_download(self, event):
         if event.widget != self:
@@ -261,6 +262,7 @@ class SceneBacktest(Scene):
         avg_lose = self._player.avg_lose
         mid_win = self._player.mid_win
         mid_lose = self._player.mid_lose
+        exp_inc = (((avg_win+1)*(avg_lose+1) + (mid_win+1)*(mid_lose+1)) / 2 - 1) * win_rate + max_lose * (1-win_rate)
         # 显示信息
         self.stdio.write('backtest completed.\n')
         self.stdio.write('单位净值:  {}  {}\n'.format(self._player.get_value(), self._get_udc(value, '_value')))
@@ -272,10 +274,11 @@ class SceneBacktest(Scene):
         self.stdio.write('平均负收益: {:.2f} %  {}\n'.format(avg_lose * 100, self._get_udc(avg_lose, '_avg_lose')))
         self.stdio.write('中位正收益: {:.2f} %  {}\n'.format(mid_win * 100, self._get_udc(mid_win, '_mid_inc')))
         self.stdio.write('中位负收益: {:.2f} %  {}\n'.format(mid_lose * 100, self._get_udc(mid_lose, '_mid_lose')))
+        self.stdio.write('预期收益率: {:.2f} %  {}\n'.format(exp_inc * 100, self._get_udc(exp_inc, '_exp_inc')))
         # 更新记录
         self._value, self._win_rate, self._sum_inc = value, win_rate, sum_inc
         self._max_inc, self._max_lose, self._avg_inc, self._avg_lose = max_win, max_lose, avg_win, avg_lose
-        self._mid_inc, self._mid_lose = mid_win, mid_lose
+        self._mid_inc, self._mid_lose, self._exp_inc = mid_win, mid_lose, exp_inc
         # 添加查看按钮
         bt_draw_plt = ttk.Button(self.fm_result_button, text='绘制图表', command=self._draw_plt)
         bt_draw_plt.grid(row=0, column=0, padx=2)
