@@ -1056,9 +1056,9 @@ class Investor:
         """浮动收益率"""
         res = 0
         for v in self._warehouse.values():
+            res += v.income_pct
             if v.retracement < self._max_down:
                 self._max_down = v.retracement
-            res += v.income_pct
         n = len(self._warehouse)
         return 0 if n == 0 else res / n
 
