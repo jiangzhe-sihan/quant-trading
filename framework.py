@@ -240,12 +240,7 @@ class KLine:
                 break
             ptr = ptr.previous
             span -= 1
-        if isinstance(func, str):
-            val = ptr.__getattribute__(func)
-            if isinstance(val, (int, float)):
-                return val
-            return val(*args, **kw)
-        return func(ptr)
+        return self._get_value(ptr, func, *args, **kw)
 
     def interval_max(self, span: int, func: str | FunctionType, *args, **kw):
         """获取属性的区间最大值"""
@@ -258,16 +253,9 @@ class KLine:
             if ptr.previous is None:
                 break
             ptr = ptr.previous
-            if isinstance(func, str):
-                val = ptr.__getattribute__(func)
-                if not isinstance(val, (int, float)):
-                    val = val(*args, **kw)
-                if val > res:
-                    res = val
-            else:
-                ref = func(ptr)
-                if ref > res:
-                    res = ref
+            ref = self._get_value(ptr, func, *args, **kw)
+            if ref > res:
+                res = ref
             span -= 1
         return res
 
@@ -282,16 +270,9 @@ class KLine:
             if ptr.previous is None:
                 break
             ptr = ptr.previous
-            if isinstance(func, str):
-                val = ptr.__getattribute__(func)
-                if not isinstance(val, (int, float)):
-                    val = val(*args, **kw)
-                if val < res:
-                    res = val
-            else:
-                ref = func(ptr)
-                if ref < res:
-                    res = ref
+            ref = self._get_value(ptr, func, *args, **kw)
+            if ref < res:
+                res = ref
             span -= 1
         return res
 
@@ -366,6 +347,39 @@ class KLine:
     def bia(self, n: int, func: str | FunctionType):
         """计算指标乖离率"""
         return self.increasement(self.ma(n, func), self.get_history_value(0, func))
+
+    @staticmethod
+    def _get_value(ptr: KLine, func: str | FunctionType, *args, **kw):
+        if isinstance(func, str):
+            val = ptr.__getattribute__(func)
+            if isinstance(val, (int, float)):
+                return val
+            return val(*args, **kw)
+        return func(ptr)
+
+    def get_future_value(self, span: int, func: str | FunctionType, *args, **kw):
+        """获取未来属性值"""
+        ptr = self
+        while span:
+            if ptr.next is None:
+                return None
+            ptr = ptr.next
+            span -= 1
+        return self._get_value(ptr, func, *args, **kw)
+
+    def future_min(self, span: int, func: str | FunctionType, *args, **kw):
+        """获取未来属性的最小值"""
+        ptr = self
+        res = self._get_value(ptr, func, *args, **kw)
+        while span:
+            if ptr.next is None:
+                return
+            ptr = ptr.next
+            ref = self._get_value(ptr, func, *args, **kw)
+            if ref < res:
+                res = ref
+            span -= 1
+        return res
 
     def get_datetime(self):
         return pd.to_datetime(self.date)
@@ -773,13 +787,7 @@ class Investor:
         self._li_unsale: set[str] = set()  # 因为跌停而没有卖出的股票
         self._income_rate = 0  # 累计收益率
         self._value = 1  # 单位净值
-        self._sum_win = 0  # 累计正收益
-        self._sum_lose = 0  # 累计负收益
-        self._li_win = []  # 收益率列表
-        self._li_lose = []  # 负收益率列表
-        self._max_win = 0  # 最大正收益
-        self._max_lose = 0  # 最大负收益
-        self._max_down = 0  # 最大回撤
+        self._gp_irt = [InvRater() for i in range(11)]  # 多周期统计器
         self._static = {}  # 静态变量
         self._price_buy = 'low'  # 买入价格（默认最低价）
         self._price_sell = 'high'  # 卖出价格（默认最高价）
@@ -796,47 +804,43 @@ class Investor:
 
     @property
     def sum_win(self):
-        return self._sum_win
+        return self._gp_irt[0].sum_win
 
     @property
     def sum_lose(self):
-        return self._sum_lose
+        return self._gp_irt[0].sum_lose
 
     @property
     def max_win(self):
-        return self._max_win
+        return self._gp_irt[0].max_win
 
     @property
     def max_lose(self):
-        return self._max_lose
+        return self._gp_irt[0].max_lose
 
     @property
     def avg_win(self):
-        return self._sum_win / self._win if self._win else 0
+        return self._gp_irt[0].avg_win
 
     @property
     def avg_lose(self):
-        return self._sum_lose / self._lose if self._lose else 0
+        return self._gp_irt[0].avg_lose
 
     @property
     def mid_win(self):
-        return self._li_win[len(self._li_win) // 2] if self._li_win else 0
+        return self._gp_irt[0].mid_win
 
     @property
     def mid_lose(self):
-        return self._li_lose[len(self._li_lose) // 2] if self._li_lose else 0
+        return self._gp_irt[0].mid_lose
 
     @property
     def max_down(self):
-        return self._max_down
+        return self._gp_irt[0].max_down
 
     @property
     def exp_inc(self):
-        avg_inc = (self.avg_win + 1) * (self.avg_lose + 1)
-        mid_inc = (self.mid_win + 1) * (self.mid_lose + 1)
-        exp_win = (avg_inc + mid_inc) / 2 - 1
-        exp_lose = (self.max_lose + self.max_down) / 2
-        return exp_win * self.win_rate + exp_lose * (1 - self.win_rate)
+        return self._gp_irt[0].exp_inc
 
     @property
     def static(self):
@@ -937,6 +941,17 @@ class Investor:
         self.li_buy.difference_update(self.li_t)
         self.li_sell.difference_update(self.li_t)
 
+    def _update_invr(self, symbol: str):
+        price = self._get_target_price(symbol, self._price_buy)
+        for i in range(1, 11):
+            invr = self._gp_irt[i]
+            kl = self.market.tell[symbol]
+            close = kl.get_future_value(i, self._price_sell)
+            incr = close / price - 1 if close else 0
+            invr.update_incr(incr)
+            down = kl.future_min(i, 'low')
+            invr.update_down(down) if down is not None else None
+
     def _record_history(self, warehouse=True):
         date = self.market.date_handler.get_inter()
         self.strategy_history[date] = (self.li_buy.copy(), self.li_sell.copy(), self.li_t.copy())
@@ -948,7 +963,7 @@ class Investor:
         """计算卖出收益"""
         if symbol in self._warehouse:
             res = self._warehouse[symbol].income_pct
-            del self._warehouse[symbol]
+            self._warehouse.pop(symbol)
             return res
         return 0
 
@@ -982,6 +997,7 @@ class Investor:
         else:
             self._warehouse[symbol].current = price
             self._warehouse[symbol].overweight(volume)
+        self._update_invr(symbol)
 
     def sell(self, symbol: str):
         """模拟卖出"""
@@ -997,18 +1013,7 @@ class Investor:
         if price is not None:
             order.current = price
         incr = order.income_pct
-        if incr > 0:
-            self._win += 1
-            self._sum_win += incr
-            self._li_win.append(incr)
-            if incr > self._max_win:
-                self._max_win = incr
-        else:
-            self._lose += 1
-            self._sum_lose += incr
-            self._li_lose.append(incr)
-            if incr < self._max_lose:
-                self._max_lose = incr
+        self._gp_irt[0].update_incr(incr)
         rec = (
             symbol, order.create_time,
             (self.market.today - order.create_time).days,
@@ -1030,6 +1035,7 @@ class Investor:
             self._warehouse[symbol].overweight(volume)
         else:
             self._warehouse[symbol] = Order(price, 100, self.market.date_handler.get_inter())
+        self._update_invr(symbol)
 
     def clear(self):
         """清仓"""
@@ -1052,8 +1058,8 @@ class Investor:
         self.history_floating.append(self.floating)
         self.history_income_rate.append(self._income_rate)
         self.history_value.append(self._value)
-        self._li_win.sort()
-        self._li_lose.sort()
+        for i in self._gp_irt:
+            i.settle()
 
     @property
     def floating(self):
@@ -1061,15 +1067,14 @@ class Investor:
         res = 0
         for v in self._warehouse.values():
             res += v.income_pct
-            if v.retracement < self._max_down:
-                self._max_down = v.retracement
+            self._gp_irt[0].update_down(v.retracement)
         n = len(self._warehouse)
         return 0 if n == 0 else res / n
 
     @property
     def win_rate(self):
         """胜率"""
-        return self._win / (self._win + self._lose) if self._win != 0 else 0
+        return self._gp_irt[0].win_rate
 
 
 class InvestorChina(Investor):
@@ -1113,3 +1118,75 @@ class InvestorTest(Investor):
         self.li_sell.clear()
         self.li_t.clear()
         return True
+
+
+class InvRater:
+    """投资收益评价器"""
+    def __init__(self):
+        self._li_win: list[float] = []
+        self._li_lose: list[float] = []
+        self._max_lose: float = 0
+
+    def update_incr(self, incr: float):
+        if incr > 0:
+            self._li_win.append(incr)
+        else:
+            self._li_lose.append(incr)
+
+    def update_down(self, lose: float):
+        if lose < self._max_lose:
+            self._max_lose = lose
+
+    def settle(self):
+        self._li_win.sort()
+        self._li_lose.sort()
+
+    @property
+    def sum_win(self):
+        return sum(self._li_win)
+
+    @property
+    def sum_lose(self):
+        return sum(self._li_lose)
+
+    @property
+    def max_win(self):
+        return self._li_win[-1] if self._li_win else 0
+
+    @property
+    def max_lose(self):
+        return self._li_lose[0] if self._li_lose else 0
+
+    @property
+    def avg_win(self):
+        return self.sum_win / len(self._li_win) if self._li_win else 0
+
+    @property
+    def avg_lose(self):
+        return self.sum_lose / len(self._li_lose) if self._li_lose else 0
+
+    @property
+    def mid_win(self):
+        return self._li_win[len(self._li_win) // 2] if self._li_win else 0
+
+    @property
+    def mid_lose(self):
+        return self._li_lose[len(self._li_lose) // 2] if self._li_lose else 0
+
+    @property
+    def win_rate(self):
+        wins = len(self._li_win)
+        loses = len(self._li_lose)
+        return wins / (wins + loses) if wins else 0
+
+    @property
+    def max_down(self):
+        return self._max_lose
+
+    @property
+    def exp_inc(self):
+        avg_inc = (self.avg_win + 1) * (self.avg_lose + 1)
+        mid_inc = (self.mid_win + 1) * (self.mid_lose + 1)
+        exp_win = (avg_inc + mid_inc) / 2 - 1
+        exp_lose = (self.max_lose + self.max_down) / 2
+        return exp_win * self.win_rate + exp_lose * (1 - self.win_rate)
