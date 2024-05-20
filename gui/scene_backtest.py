@@ -278,6 +278,8 @@ class SceneBacktest(Scene):
         self.stdio.write('中位正收益: {:.2f} %  {}\n'.format(mid_win * 100, self._get_udc(mid_win, '_mid_inc')))
         self.stdio.write('中位负收益: {:.2f} %  {}\n'.format(mid_lose * 100, self._get_udc(mid_lose, '_mid_lose')))
         self.stdio.write('预期收益率: {:.2f} %  {}\n'.format(exp_inc * 100, self._get_udc(exp_inc, '_exp_inc')))
+        span, sincr = self._player.best_span()
+        self.stdio.write('最佳周期-收益：{}-{:.2f} % '.format(span, sincr * 100))
         # 更新记录
         self._value, self._win_rate, self._sum_inc, self._max_down = value, win_rate, sum_inc, max_down
         self._max_inc, self._max_lose, self._avg_inc, self._avg_lose = max_win, max_lose, avg_win, avg_lose

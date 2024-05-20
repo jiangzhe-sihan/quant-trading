@@ -362,7 +362,7 @@ class KLine:
         ptr = self
         while span:
             if ptr.next is None:
-                return None
+                break
             ptr = ptr.next
             span -= 1
         return self._get_value(ptr, func, *args, **kw)
@@ -373,7 +373,7 @@ class KLine:
         res = self._get_value(ptr, func, *args, **kw)
         while span:
             if ptr.next is None:
-                return
+                break
             ptr = ptr.next
             ref = self._get_value(ptr, func, *args, **kw)
             if ref < res:
@@ -842,6 +842,10 @@ class Investor:
     def exp_inc(self):
         return self._gp_irt[0].exp_inc
 
+    def best_span(self):
+        li = sorted(self._gp_irt[1:], key=lambda x: x.single_exp_inc)
+        return self._gp_irt.index(li[-1]), li[-1].single_exp_inc
+
     @property
     def static(self):
         """静态变量的获取方法"""
@@ -943,14 +947,14 @@ class Investor:
 
     def _update_invr(self, symbol: str):
         price = self._get_target_price(symbol, self._price_buy)
-        for i in range(1, 11):
+        kl = self.market.tell[symbol]
+        for i in range(1, len(self._gp_irt)):
             invr = self._gp_irt[i]
-            kl = self.market.tell[symbol]
             close = kl.get_future_value(i, self._price_sell)
-            incr = close / price - 1 if close else 0
+            incr = close / price - 1
             invr.update_incr(incr)
             down = kl.future_min(i, 'low')
-            invr.update_down(down) if down is not None else None
+            invr.update_down(down)
 
     def _record_history(self, warehouse=True):
         date = self.market.date_handler.get_inter()
@@ -1190,3 +1194,9 @@ class InvRater:
         exp_win = (avg_inc + mid_inc) / 2 - 1
         exp_lose = (self.max_lose + self.max_down) / 2
         return exp_win * self.win_rate + exp_lose * (1 - self.win_rate)
+
+    @property
+    def single_exp_inc(self):
+        winr = self.win_rate
+        loser = 1 - winr
+        return self.mid_win * winr + self.mid_lose * loser
