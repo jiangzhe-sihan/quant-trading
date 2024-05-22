@@ -1199,4 +1199,6 @@ class InvRater:
     def single_exp_inc(self):
         winr = self.win_rate
         loser = 1 - winr
-        return self.mid_win * winr + self.mid_lose * loser
+        inc = (self.mid_win + self.avg_win) / 2 + 1
+        lose = (self.avg_lose + self.mid_lose) / 2 + 1
+        return inc ** winr * lose ** loser - 1
