@@ -3,3 +3,4 @@ data/
 .idea
 configure.json
 .gitignore
+make.bat
