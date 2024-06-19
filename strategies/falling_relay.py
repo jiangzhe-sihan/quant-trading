@@ -2,6 +2,20 @@
 # DESCRIPTION=下跌中继做反弹
 
 
+prop = [
+    ('换手', lambda x: f'{x.hs} %'),
+    ('量比', lambda x: x.lb),
+    ('市值', lambda x: f'{x.market_value / 10000:.2f} 亿'),
+    ('lwr1', lambda x: x.lwr()[0]),
+    ('lwr2', lambda x: x.lwr()[1]),
+    ('成交额（模拟）', lambda x: x.volume * (x.open + x.close) * 50),
+    ('5日平均成交额', lambda x: x.ma(5, 'amount')),
+    ('ma5', lambda x: x.ma(5, 'close')),
+    ('ema5', lambda x: x.ema(5, 'close')),
+    ('sma5', lambda x: x.sma(5, 1, 'close'))
+]
+
+
 def func(self):
     """下跌中继做反弹"""
     for k, v in self.market.tell.items():
