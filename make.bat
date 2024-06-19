@@ -1,1 +1,0 @@
-nuitka --mingw64 --disable-console --standalone --show-progress --show-memory --enable-plugin=tk-inter --enable-plugin=pylint-warnings --company-name="LazyDog Ltd." --product-name=量化宇宙 --file-version=3.1.1.0 --product-version=3.1.1.0 --file-description=自研量化交易系统 --copyright="版权所有 (C) 2022 LazyDog, ltd. / dava0086" --windows-icon-from-ico=favicon.ico --output-dir=out .\src\main.py
