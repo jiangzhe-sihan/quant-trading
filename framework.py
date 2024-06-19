@@ -166,7 +166,9 @@ class KLine:
     @property
     def lb(self):
         """量比"""
-        return self.volume / self.previous.ma(5, 'volume')
+        if self.previous:
+            return self.volume / self.previous.ma(5, 'volume')
+        return 0
 
     def count(self, func, interval=0):
         """统计满足条件的k线数量"""

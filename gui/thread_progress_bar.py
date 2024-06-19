@@ -59,10 +59,10 @@ class ThreadProgressBar(ttk.Progressbar):
                 msg = str(self._td.exception)
             showerror(self._td.exception.__class__.__name__, msg, parent=self)
         self._td.join()
-        self._td = None
+        # self._td = None
         self._statu.set(not self._statu.get())
         self._idle_count = 0
-        self.update()
+        self.update_idletasks()
 
     def load_thread(self, td):
         self._count = 0
