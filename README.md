@@ -46,6 +46,15 @@ python main.py
 ```
 或是在`Windows`下运行配置部分中的`start.bat`来启动应用程序。
 ## 更新记录
+### 2024/11/16
+- 为部分K线属性添加别名，简化调用
+```text
+ref -> get_history_value
+hhv -> interval_max
+llv -> interval_min
+```
+- 新增内置股票池：美股
+- 修复若干bug，提高系统稳定性
 ### 2024/4/6
 - 修复部分标的无法联网查询的问题
 - 修复某些情况下添加策略描述导致策略无法加载的问题
