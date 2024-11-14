@@ -234,6 +234,9 @@ class KLine:
             n -= 1
         return True
 
+    def ref(self, span: int, func: str | FunctionType, *args, **kw):
+        return self.get_history_value(span, func, *args, **kw)
+
     def get_history_value(self, span: int, func: str | FunctionType, *args, **kw):
         """获取历史属性值"""
         ptr = self
@@ -243,6 +246,9 @@ class KLine:
             ptr = ptr.previous
             span -= 1
         return self._get_value(ptr, func, *args, **kw)
+
+    def hhv(self, span: int, func: str | FunctionType, *args, **kw):
+        return self.interval_max(span, func, *args, **kw)
 
     def interval_max(self, span: int, func: str | FunctionType, *args, **kw):
         """获取属性的区间最大值"""
@@ -260,6 +266,9 @@ class KLine:
                 res = ref
             span -= 1
         return res
+
+    def llv(self, span: int, func: str | FunctionType, *args, **kw):
+        return self.interval_min(span, func, *args, **kw)
 
     def interval_min(self, span: int, func: str | FunctionType, *args, **kw):
         """获取属性的区间最小值"""
