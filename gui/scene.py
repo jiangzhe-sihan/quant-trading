@@ -474,7 +474,7 @@ class SceneSetting(Scene):
             self._swnd_pool[pool_name].focus()
             return
         if pool_name in CommonPool.refer:
-            showinfo(pool_name, f'该默认池会联网查询{pool_name}中的标的。', parent=self.winfo_toplevel())
+            showinfo(pool_name, f'该内置池会联网查询{pool_name}中的标的。', parent=self.winfo_toplevel())
             return
         pool = '../pools/' + pool_name + '.json'
         swnd = SubWindow(self.root)
