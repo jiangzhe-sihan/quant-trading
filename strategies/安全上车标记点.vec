@@ -1,0 +1,5 @@
+# NAME=安全上车标记点
+# DESCRIPTION=
+# SIMILARITY=0.985
+
+["func = lambda x: x.increase > 0\n", "func = lambda x: x.volume / x.ref(1, 'volume') if x.ref(1, 'volume') else 0\n", "func = lambda x: x.high == x.hhv(15, 'high')\n", "func = lambda x: x.close / x.ma(5, 'high')\n", "def func(v):\n    up = v.count(lambda x: x.increase > 0, 60)\n    up_ex = v.count(lambda x: x.increase > 0 and x.volume > x.ref(1, 'volume'), 60)\n    return up/up_ex if up_ex else 0\n", "def func(v):\n    down = v.count(lambda x: x.increase < 0, 60)\n    down_ex = v.count(lambda x: x.increase < 0 and x.volume < x.ref(1, 'volume'), 60)\n    return down/down_ex if down_ex else 0\n"]
