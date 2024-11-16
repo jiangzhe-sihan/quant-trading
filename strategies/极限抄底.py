@@ -17,6 +17,6 @@ def func(self):
         qta = v.increasement(v.interval_max(3, 'open'), v.close)
         jxcd = (v.interval_min(3, 'increase') == inc and lwr1 > lwr2 and qta < -.039 and 
                 (lwr1 - lwr2) * (lwr1 + lwr2) > 350 and v.interval_max(3, 'high') != v.high and 
-                v.close > 18)
+                v.close > 18) and .7 > v.bia(60, 'amount') > .23
         if jxcd and 'ST' not in k:
             self.li_buy.add(k)
