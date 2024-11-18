@@ -621,7 +621,7 @@ class Market:
                     raise SystemError('load aborted.')
         self._dates = sorted(self._data.keys())
         n = ceil(get_max_cpu_count() * .5)
-        self._create_slice(n)
+        self._create_slice(n, prop is not None)
         self._flush_index()
 
     @property
@@ -629,19 +629,28 @@ class Market:
         """获取多线程切片"""
         return self._slices
 
-    def _create_slice(self, count: int = None):
+    def _create_slice(self, count: int = None, axis: bool = True):
         """创建多线程切片"""
         if count is None:
             count = get_max_cpu_count()
         cnt = ceil(len(self._dates) / count)
         slcs = []
-        for i in range(0, len(self._dates), cnt):
-            sl = self._dates[i:i + cnt]
-            da = {}
-            for date in sl:
-                da[date] = np.apply_along_axis(
-                    _to_vec, 0, arr=self._data[date])
-            slcs.append(MarketSlice(sl[0], sl[-1], data=da, dates=sl, hashtable=self._hashtable))
+        if axis:
+            for i in range(0, len(self._dates), cnt):
+                sl = self._dates[i:i + cnt]
+                da = {}
+                for date in sl:
+                    da[date] = np.apply_along_axis(_to_vec, 0, arr=self._data[date])
+                slcs.append(MarketSlice(sl[0], sl[-1], data=da, dates=sl, hashtable=self._hashtable))
+        else:
+            _hash = self._hashtable.copy()
+            for k in _hash:
+                _hash[k] = _hash[k] % cnt
+            for i in range(0, self.len, cnt):
+                _data = self._data.copy()
+                for k in _data:
+                    _data[k] = _data[k][i:i+cnt]
+                slcs.append(MarketSlice(self.stime, self.ctime, data=_data, hashtable=_hash))
         self._slices = tuple(slcs)
 
     def _flush_index(self):
