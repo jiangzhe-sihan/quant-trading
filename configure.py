@@ -150,6 +150,15 @@ class ScriptLoader:
         return self._script_instance[filename][0]
 
 
+def stg_send_func(player: Investor, stg: dict[datetime.datetime, tuple[set[str], set[str], set[str]]]):
+    today = player.market.today
+    if today not in stg:
+        return
+    player.li_buy.update(stg[today][0])
+    player.li_sell.update(stg[today][1])
+    player.li_t.update(stg[today][2])
+
+
 class StrategyLoader(ScriptLoader):
     instance = {}
 

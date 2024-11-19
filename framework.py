@@ -656,7 +656,12 @@ class Market:
                 _data = self._data.copy()
                 for k in _data:
                     _data[k] = _data[k][i:i+cnt]
-                slcs.append(MarketSlice(self.stime, self.ctime, data=_data, hashtable=self._slice_hashtable[i // cnt]))
+                slcs.append(
+                    MarketSlice(
+                        self.stime, self.ctime, data=_data,
+                        dates=self._dates, hashtable=self._slice_hashtable[i // cnt]
+                    )
+                )
         self._slices = tuple(slcs)
 
     def _flush_index(self):

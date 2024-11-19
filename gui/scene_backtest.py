@@ -253,7 +253,8 @@ class SceneBacktest(Scene):
             #     if td_sl.code != 0:
             #         return
             #     self.stdio.write('signal sent already.\n')
-            #     print(td_sl.res)
+            #     li_stg.clear()
+            #     li_stg.append(lambda x: stg_send_func(x, td_sl.res))
         self.stdio.clear()
         self.stdio.write('backtesting..\n')
         self._player = InvestorChina(self._market)
