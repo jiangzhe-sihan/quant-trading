@@ -245,6 +245,15 @@ class SceneBacktest(Scene):
         else:
             for i in range(len(li_stg)):
                 li_stg[i] = self._cfg.strategy_loader.get_strategy(li_stg[i]).func
+            # if li_stg:
+            #     self.stdio.clear()
+            #     self.stdio.write('signal sending..\n')
+            #     td_sl = CommonMarketSliceProcessor(self._market, li_stg, self._cfg.strategy_loader)
+            #     self.progressbar.load_thread(td_sl)
+            #     if td_sl.code != 0:
+            #         return
+            #     self.stdio.write('signal sent already.\n')
+            #     print(td_sl.res)
         self.stdio.clear()
         self.stdio.write('backtesting..\n')
         self._player = InvestorChina(self._market)

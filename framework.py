@@ -473,7 +473,7 @@ class KLine:
 class MarketSlice:
     """市场切片"""
     def __init__(self, stime: datetime.datetime, ctime: datetime.datetime = None, **kw):
-        self._data: dict[datetime.datetime, np.ndarray[Vector]] = kw.get('data', {})  # 日k特征
+        self._data: dict[datetime.datetime, np.ndarray[Vector | KLine]] = kw.get('data', {})  # 日k特征
         self.date_handler: Date = Date(stime)  # 日期管理器
         self._dates: list[datetime.datetime] = kw.get('dates', [])  # 日期列表
         self._date_index = 0  # 当前日期索引
@@ -482,7 +482,7 @@ class MarketSlice:
             ctime = datetime.datetime.today()
         self.ctime: datetime.datetime = ctime  # 当前（终止）日期
         self._hashtable: dict[str, int] = kw.get('hashtable', {})  # 标的哈希表
-        self._quotes: dict[datetime.datetime, dict[str, Vector]] = {}  # 记录特征
+        self._quotes: dict[datetime.datetime, dict[str, Vector | KLine]] = {}  # 记录特征
 
     def next(self):
         """跳转至下一交易日"""
@@ -494,7 +494,7 @@ class MarketSlice:
         return 0
 
     @property
-    def tell(self) -> dict[str, Vector]:
+    def tell(self) -> dict[str, Vector | KLine]:
         """返回当日各股特征"""
         date = self.date_handler.get_inter()
         if date in self._quotes:
@@ -514,7 +514,7 @@ class MarketSlice:
         return self.date_handler.get_inter()
 
 
-def _to_vec(arr: np.ndarray):
+def _to_vec(arr: np.ndarray[KLine]):
     res = np.full(arr.size, None)
     for i in range(arr.size):
         if isinstance(arr[i], KLine):
@@ -541,13 +541,14 @@ class Market:
             ctime = datetime.datetime.today()
         self.ctime: datetime.datetime = ctime  # 当前（终止）日期
         self._hashtable: dict[str, int] = {}  # 标的哈希表
+        self._slice_hashtable: list[dict[str, int]] = []  # 切片哈希
         self._quotes: dict[datetime.datetime, dict[str, KLine]] = {}  # 记录行情
         self.len: int = 200  # 标的数量
         self._slices = ()  # 多线程切片
 
     def load(self, src: str | dict[str, list[dict[str, str | int | float]]],
              prop: list[tuple[str, FunctionType]] = None, callback: FunctionType = None):
-        if type(src) == str:
+        if isinstance(src, str):
             tree = next(walk(src))[2]
             self.len = 2 * (len(tree) - 1)
             res = {}
@@ -564,7 +565,7 @@ class Market:
                     if ret != 0:
                         raise SystemError('load aborted.')
             self._load_from_obj(res, prop, callback)
-        elif type(src) == dict:
+        elif isinstance(src, dict):
             self.len = len(src)
             self._load_from_obj(src, prop, callback)
         else:
@@ -577,10 +578,18 @@ class Market:
         self._data.clear()
         # 加载数据
         hash_value = 0
+        n = ceil(get_max_cpu_count() * .5)
+        _hash = {}
         for index, data in obj.items():
             if index == 'date_info':
+                print(1)
                 continue
             self._hashtable[index] = hash_value
+            sl_hash = hash_value % n
+            _hash[index] = sl_hash
+            if sl_hash == n - 1:
+                self._slice_hashtable.append(_hash.copy())
+                _hash.clear()
             # 数据处理
             last = None
             for data_day in data:
@@ -619,8 +628,8 @@ class Market:
                 ret = callback()
                 if ret != 0:
                     raise SystemError('load aborted.')
+        self.len = len(obj)-1 if 'date_info' in obj else len(obj)
         self._dates = sorted(self._data.keys())
-        n = ceil(get_max_cpu_count() * .5)
         self._create_slice(n, prop is not None)
         self._flush_index()
 
@@ -643,14 +652,11 @@ class Market:
                     da[date] = np.apply_along_axis(_to_vec, 0, arr=self._data[date])
                 slcs.append(MarketSlice(sl[0], sl[-1], data=da, dates=sl, hashtable=self._hashtable))
         else:
-            _hash = self._hashtable.copy()
-            for k in _hash:
-                _hash[k] = _hash[k] % cnt
             for i in range(0, self.len, cnt):
                 _data = self._data.copy()
                 for k in _data:
                     _data[k] = _data[k][i:i+cnt]
-                slcs.append(MarketSlice(self.stime, self.ctime, data=_data, hashtable=_hash))
+                slcs.append(MarketSlice(self.stime, self.ctime, data=_data, hashtable=self._slice_hashtable[i // cnt]))
         self._slices = tuple(slcs)
 
     def _flush_index(self):

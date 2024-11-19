@@ -4,7 +4,8 @@ import json
 from types import FunctionType
 from typing import Iterable
 
-from framework import Investor, KLine, MarketSlice
+from backtest import run_backtest
+from framework import Investor, KLine, MarketSlice, InvestorTest
 from vector import Vector
 from template import CommonPool
 
@@ -172,6 +173,15 @@ class StrategyLoader(ScriptLoader):
 
     def get_strategy(self, filename: str):
         return self.get_script(filename)
+
+
+def stg_filter(args: tuple[InvestorTest, list[str], StrategyLoader]):
+    player, li_stg, sl = args
+    li_st = []
+    for i in li_stg:
+        li_st.append(sl.get_strategy(i).func)
+    run_backtest(player, li_st)
+    return player
 
 
 class ChannelLoader(ScriptLoader):

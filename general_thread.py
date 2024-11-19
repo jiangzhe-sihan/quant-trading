@@ -4,7 +4,7 @@ import threading
 from concurrent.futures import ProcessPoolExecutor
 from os import path, mkdir, walk, remove
 
-from framework import Market, Investor
+from framework import Market, InvestorTest
 import random
 from configure import *
 from backtest import run_backtest
@@ -149,6 +149,7 @@ class BacktestThread(ProgressThread):
 
 
 class MarketSliceProcessor(ProgressThread):
+    """向量多线程"""
     def __init__(self, market: Market, group_buy, group_sell):
         super().__init__(self._func, callback=CallbackFactory.get_instance(self))
         self._market = market
@@ -164,6 +165,27 @@ class MarketSliceProcessor(ProgressThread):
             res = {}
             for i in executor.map(vec_filter, args):
                 res.update(i)
+                self.step()
+        return res
+
+
+class CommonMarketSliceProcessor(ProgressThread):
+    """普通处理多线程"""
+    def __init__(self, market: Market, li_st: list[str], sl: StrategyLoader):
+        super().__init__(self._func, callback=CallbackFactory.get_instance(self))
+        self._market = market
+        self._li_st = li_st
+        self._sl = sl
+
+    def _func(self, callback):
+        self._total = len(self._market.slices)
+        args = []
+        for i in self._market.slices:
+            args.append((InvestorTest(i), self._li_st, self._sl))
+        with ProcessPoolExecutor() as executor:
+            res = {}
+            for i in executor.map(stg_filter, args):
+                res.update(i.strategy_history)
                 self.step()
         return res
 
