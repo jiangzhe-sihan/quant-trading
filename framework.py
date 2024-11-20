@@ -654,8 +654,8 @@ class Market:
         else:
             for i in range(0, self.len, cnt):
                 _data = self._data.copy()
-                for k in _data:
-                    _data[k] = _data[k][i:i+cnt]
+                for k, v in _data.items():
+                    _data[k] = v[i:i+cnt]
                 slcs.append(
                     MarketSlice(
                         self.stime, self.ctime, data=_data,

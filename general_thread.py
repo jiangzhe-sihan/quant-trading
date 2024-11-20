@@ -185,7 +185,12 @@ class CommonMarketSliceProcessor(ProgressThread):
         with ProcessPoolExecutor() as executor:
             res = {}
             for i in executor.map(stg_filter, args):
-                res.update(i.strategy_history)
+                for k, v in i.strategy_history.items():
+                    if k not in res:
+                        res[k] = set(), set(), set()
+                    res[k][0].update(v[0])
+                    res[k][1].update(v[1])
+                    res[k][2].update(v[2])
                 self.step()
         return res
 
