@@ -26,16 +26,20 @@ class SceneBacktest(Scene):
         self.stdio = StdGuiIO(self.fm_progress, width=28, height=8, bg='#2B2B2B', fg='#A2AAAC')
         self.stdio.pack()
         self.fm_option_button = ttk.Frame(self)
-        self.fm_option_button.pack(pady=5)
+        self.fm_option_button.pack(pady=2)
         self.bt_start_test = ttk.Button(self.fm_option_button, text='开始回测', command=self._start_test)
         self.bt_start_test.config(width=8)
-        self.bt_start_test.grid(row=0, column=0, padx=1, ipady=2)
+        self.bt_start_test.grid(row=0, column=1, padx=1, ipady=2)
+        self._bt_extend_start = ttk.Button(self.fm_option_button, text='→', width=2, command=self._enable_multi)
+        self._bt_extend_start.grid(row=0, column=0, ipady=2)
         self.bt_update_data = ttk.Button(self.fm_option_button, text='更新数据', command=self.update_data)
         self.bt_update_data.config(width=8)
-        self.bt_update_data.grid(row=0, column=1, padx=1, ipady=2)
+        self.bt_update_data.grid(row=0, column=2, padx=1, ipady=2)
         self.bt_explor_market = ttk.Button(self.fm_option_button, text='市场浏览', command=self._explor_market)
         self.bt_explor_market.config(width=8)
-        self.bt_explor_market.grid(row=0, column=2, padx=1, ipady=2)
+        self.bt_explor_market.grid(row=0, column=3, padx=1, ipady=2)
+        self._multi = tk.BooleanVar()
+        self._multi.set(False)
         self.fm_result_button = ttk.Frame(self)
         self.fm_result_button.pack()
         # 实例属性
@@ -66,6 +70,21 @@ class SceneBacktest(Scene):
         self._mid_lose = 0
         self._mid_inc = 0
         self._exp_inc = 0
+
+    def _enable_multi(self):
+        if self.progressbar.is_running():
+            showwarning('警告', '请先等待程序执行完毕。', parent=self.root)
+            return
+        if self.stdio.get('insert-1l', 'end').startswith('m'):
+            self.stdio.blit('insert-1l', 'end', '\n')
+        if self._multi.get():
+            self._multi.set(False)
+            self.stdio.write('multiprocess disabled.\n')
+            self._bt_extend_start.config(text='→')
+        else:
+            self._multi.set(True)
+            self.stdio.write('multiprocess enabled.\n')
+            self._bt_extend_start.config(text='⇒')
 
     def _stop_download(self, event):
         if event.widget != self:
@@ -206,6 +225,9 @@ class SceneBacktest(Scene):
             return 1
         dsc = '是否执行数据包\n{}\n从{}到{}的回测？\n\n加载的策略有：\n'.format(pool, *date_info)
         dsc += '\n'.join(self._cfg.strategy)
+        if self._multi.get():
+            dsc += '\n\n注意：您已开启多线程。\n\n使用多线程可以加快策略执行的速度，\n但可能导致执行结果出现偏差。'
+            dsc += '\n\n请确保您的策略中没有标的之间的横向对比！'
         self.bell()
         act = askyesno('回测', dsc, parent=self.root)
         if not act:
@@ -243,18 +265,20 @@ class SceneBacktest(Scene):
                     self._sp_func_pack = lambda x: self._sp_func(x, td_sl.res)
                 li_stg = [self._sp_func_pack]
         else:
-            for i in range(len(li_stg)):
-                li_stg[i] = self._cfg.strategy_loader.get_strategy(li_stg[i]).func
-            # if li_stg:
-            #     self.stdio.clear()
-            #     self.stdio.write('signal sending..\n')
-            #     td_sl = CommonMarketSliceProcessor(self._market, li_stg, self._cfg.strategy_loader)
-            #     self.progressbar.load_thread(td_sl)
-            #     if td_sl.code != 0:
-            #         return
-            #     self.stdio.write('signal sent already.\n')
-            #     li_stg.clear()
-            #     li_stg.append(lambda x: stg_send_func(x, td_sl.res))
+            if not self._multi.get():
+                for i in range(len(li_stg)):
+                    li_stg[i] = self._cfg.strategy_loader.get_strategy(li_stg[i]).func
+            else:
+                if li_stg:
+                    self.stdio.clear()
+                    self.stdio.write('signal sending..\n')
+                    td_sl = CommonMarketSliceProcessor(self._market, li_stg, self._cfg.strategy_loader)
+                    self.progressbar.load_thread(td_sl)
+                    if td_sl.code != 0:
+                        return
+                    self.stdio.write('signal sent already.\n')
+                    li_stg.clear()
+                    li_stg.append(lambda x: stg_send_func(x, td_sl.res))
         self.stdio.clear()
         self.stdio.write('backtesting..\n')
         self._player = InvestorChina(self._market)
@@ -289,7 +313,7 @@ class SceneBacktest(Scene):
         self.stdio.write('中位负收益: {:.2f} %  {}\n'.format(mid_lose * 100, self._get_udc(mid_lose, '_mid_lose')))
         self.stdio.write('预期收益率: {:.2f} %  {}\n'.format(exp_inc * 100, self._get_udc(exp_inc, '_exp_inc')))
         span, sincr = self._player.best_span()
-        self.stdio.write('最佳周期-收益：{}-{:.2f} % '.format(span, sincr * 100))
+        self.stdio.write('最佳周期-收益：{}-{:.2f} %\n'.format(span, sincr * 100))
         # 更新记录
         self._value, self._win_rate, self._sum_inc, self._max_down = value, win_rate, sum_inc, max_down
         self._max_inc, self._max_lose, self._avg_inc, self._avg_lose = max_win, max_lose, avg_win, avg_lose

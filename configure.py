@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import os
 import json
@@ -121,6 +123,16 @@ class ScriptLoader:
 
     def get_init(self):
         return getattr(self, '_inited', False)
+
+    def backup(self):
+        return self._script_instance.copy()
+
+    def recovery(self, backup: dict[str, tuple[Script, float]]):
+        self.restore()
+        self._script_instance.update(backup)
+
+    def restore(self):
+        self._script_instance.clear()
 
     def get_script_list(self):
         self._update()

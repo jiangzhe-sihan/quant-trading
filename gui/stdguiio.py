@@ -22,8 +22,9 @@ class StdGuiIO(tk.Text):
     def blit(self, index1, index2, string):
         """更新区块"""
         self.config(state='normal')
+        ori = self.index(index1)
         self.delete(index1, index2)
-        self.insert(index1, string)
+        self.insert(ori, string)
         self.config(state='disabled')
         self.update()
 

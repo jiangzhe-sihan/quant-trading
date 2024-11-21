@@ -176,6 +176,8 @@ class CommonMarketSliceProcessor(ProgressThread):
         self._market = market
         self._li_st = li_st
         self._sl = sl
+        self._backup = sl.backup()
+        self._sl.restore()
 
     def _func(self, callback):
         self._total = len(self._market.slices)
@@ -192,6 +194,7 @@ class CommonMarketSliceProcessor(ProgressThread):
                     res[k][1].update(v[1])
                     res[k][2].update(v[2])
                 self.step()
+        self._sl.recovery(self._backup)
         return res
 
 
