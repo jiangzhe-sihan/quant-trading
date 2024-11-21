@@ -31,7 +31,6 @@ class SceneBacktest(Scene):
         self.bt_start_test.config(width=8)
         self.bt_start_test.grid(row=0, column=1, padx=1, ipady=2)
         self._bt_extend_start = ttk.Button(self.fm_option_button, text='→', width=2, command=self._enable_multi)
-        self._bt_extend_start.grid(row=0, column=0, ipady=2)
         self.bt_update_data = ttk.Button(self.fm_option_button, text='更新数据', command=self.update_data)
         self.bt_update_data.config(width=8)
         self.bt_update_data.grid(row=0, column=2, padx=1, ipady=2)
@@ -94,6 +93,8 @@ class SceneBacktest(Scene):
     def _update_config(self, event):
         if event.widget != self:
             return
+        if self.progressbar.is_running():
+            return
         pool = self._cfg.pool
         if pool in CommonPool.refer:
             pool = pool.replace('*', '').strip()
@@ -113,6 +114,10 @@ class SceneBacktest(Scene):
             elif r == 1:
                 self.stdio.write('load failed.\n')
         self._mode = self._cfg.strategy_mode
+        if self._mode == 'code':
+            self._bt_extend_start.grid(row=0, column=0, ipady=2)
+        else:
+            self._bt_extend_start.grid_forget()
 
     def _load(self):
         pool = self._cfg.pool
