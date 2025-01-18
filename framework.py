@@ -161,7 +161,7 @@ class KLine:
     @property
     def market_value(self):
         """市值"""
-        return self.volume * self.close / self.hs
+        return 100 * self.volume * self.close / self.hs
 
     @property
     def lb(self):
@@ -456,17 +456,19 @@ class KLine:
             date.insert(0, ptr.date)
             res.insert(0, (ptr.open, ptr.high, ptr.low, ptr.close, ptr.volume,
                            ptr.close - ptr.last_close, ptr.increase * 100, ptr.last_close,
-                           ptr.ma(5, 'close'), ptr.ma(10, 'close'), ptr.ma(20, 'close')))
+                           ptr.ma(5, 'close'), ptr.ma(10, 'close'), ptr.ma(20, 'close'),
+                           ptr.amount, ptr.hs))
             ptr = ptr.previous
         ptr = self.next
         while ptr is not None:
             date.append(ptr.date)
             res.append((ptr.open, ptr.high, ptr.low, ptr.close, ptr.volume,
                         ptr.close - ptr.last_close, ptr.increase * 100, ptr.last_close,
-                        ptr.ma(5, 'close'), ptr.ma(10, 'close'), ptr.ma(20, 'close')))
+                        ptr.ma(5, 'close'), ptr.ma(10, 'close'), ptr.ma(20, 'close'),
+                        ptr.amount, ptr.hs))
             ptr = ptr.next
-        columns = ['open', 'high', 'low', 'close', 'volume',
-                   'change', 'pct_change', 'last_close', 'ma5', 'ma10', 'ma20']
+        columns = ['open', 'high', 'low', 'close', 'volume', 'change', 'pct_change',
+                   'last_close', 'ma5', 'ma10', 'ma20', 'amount', 'hs']
         return pd.DataFrame(res, index=pd.DatetimeIndex(date), columns=columns)
 
 

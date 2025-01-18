@@ -53,7 +53,7 @@ normal_font = {
     'ha': 'right'
 }
 normal_font_left = {
-    'fontname': 'Arial',
+    'fontname': 'SimHei',
     'size': '12',
     'color': 'black',
     'va': 'bottom',
@@ -110,6 +110,10 @@ class InterCandle:  # 定义一个交互K线图类
         self._tx_volume_value = fig.text(0.60, 0.90, '', **normal_font_left)
         self._tx_last_close_label = fig.text(0.60, 0.86, '昨收: ', **normal_label_font)
         self._tx_last_close_value = fig.text(0.65, 0.86, '', **normal_font)
+        self._tx_amount_label = fig.text(0.75, 0.90, '额: ', **normal_label_font)
+        self._tx_amount_value = fig.text(0.75, 0.90, '', **normal_font_left)
+        self._tx_hs_label = fig.text(0.75, 0.86, '换手: ', **normal_label_font)
+        self._tx_hs_value = fig.text(0.80, 0.86, '', **normal_font)
         # 添加十字光标
         self._cursor = MultiCursor(self._fig.canvas,
                                    [self._ax_price, self._ax_volume],
@@ -201,6 +205,13 @@ class InterCandle:  # 定义一个交互K线图类
         self._tx_low_value.set_text(f'{display_data["low"]}')
         self._tx_volume_value.set_text(f'{display_data["volume"]:.0f}')
         self._tx_last_close_value.set_text(f'{display_data["last_close"]}')
+        amount = display_data["amount"]
+        if amount % 100000000:
+            amount = f'{amount / 100000000:.2f}亿'
+        elif amount % 10000:
+            amount = f'{amount / 10000:.2f}万'
+        self._tx_amount_value.set_text(f'{amount}')
+        self._tx_hs_value.set_text(f'{display_data["hs"]}')
         # 根据本交易日的价格变动值确定开盘价、收盘价的显示颜色
         if display_data['change'] > 0:  # 如果今日变动额大于0，即今天价格高于昨天，今天价格显示为绿色
             close_number_color = 'green'
