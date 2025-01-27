@@ -13,6 +13,8 @@ def func(self):
     self.set_price_sell('high')
     itv = 60
     for k, v in self.market.tell.items():
+        if not v.close > 60:
+            continue
         if v.increase > 0 and v.ref(1, 'volume') and v.volume / v.ref(1, 'volume') > 1.52 and v.hhv(15, 'high') != v.high and v.close > v.ma(5, 'high'):
             up = v.count(lambda x: x.increase > 0, itv)
             up_ex = v.count(lambda x: x.increase > 0 and x.volume > x.ref(1, 'volume'), itv)
