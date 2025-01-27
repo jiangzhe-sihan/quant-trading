@@ -206,9 +206,9 @@ class InterCandle:  # 定义一个交互K线图类
         self._tx_volume_value.set_text(f'{display_data["volume"]:.0f}')
         self._tx_last_close_value.set_text(f'{display_data["last_close"]}')
         amount = display_data["amount"]
-        if amount % 100000000:
+        if amount // 100000000:
             amount = f'{amount / 100000000:.2f}亿'
-        elif amount % 10000:
+        elif amount // 10000:
             amount = f'{amount / 10000:.2f}万'
         self._tx_amount_value.set_text(f'{amount}')
         self._tx_hs_value.set_text(f'{display_data["hs"]}')
