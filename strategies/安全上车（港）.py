@@ -4,7 +4,8 @@
 
 prop = [
     ('倍量', lambda x: x.volume / x.ref(1, 'volume')),
-    ('市值', lambda x: x.market_value)
+    ('市值', lambda x: x.market_value),
+    ('成交额', lambda x: x.amount)
 ]
 
 
@@ -13,7 +14,7 @@ def func(self):
     self.set_price_sell('high')
     itv = 60
     for k, v in self.market.tell.items():
-        if not v.close > 1:
+        if v.close < 1 or v.amount < 5000000:
             continue
         if v.increase > 0 and v.ref(1, 'volume') and v.volume / v.ref(1, 'volume') > 1.52 and v.hhv(15, 'high') != v.high and v.close > v.ma(5, 'high'):
             up = v.count(lambda x: x.increase > 0, itv)

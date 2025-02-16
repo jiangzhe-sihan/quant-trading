@@ -38,7 +38,7 @@ def func(pool, stime, ctime, callback):
             'fields1': 'f1,f2,f3,f4,f5,f6',
             'fields2': 'f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61',
             'klt': '101',
-            'fqt': 0,
+            'fqt': 1,
             'end': '{}{:0>2}{:0>2}'.format(ctime[0], ctime[1], ctime[2]),
             'beg': '{}{:0>2}{:0>2}'.format(stime[0], stime[1], stime[2]),
             '_': _
