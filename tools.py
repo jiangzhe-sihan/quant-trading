@@ -212,19 +212,42 @@ def print_list(li: Iterable, col: int):
     print(']')
 
 
+async def get_stocks(session, sem, url, s, p, fs, ua):
+    n = random.randint(1, 99)
+    res = await aio_get(
+        session, url.format(n, s, p, fs), sem,
+        headers={'User-Agent': ua, 'host': f'{n}.push2.eastmoney.com'}
+    )
+    return res
+
+
 def get_stock_list(fs):
     ua = get_user_agent()
-    url = 'http://{}.push2.eastmoney.com/api/qt/clist/get?pn=1&pz={}&po=1&np=1&fltt=2&invt=2&fid=f3&{}&fields=f12,f13,f14'
+    url = 'http://{}.push2.eastmoney.com/api/qt/clist/get?pn={}&pz={}&po=1&np=1&fltt=2&invt=2&fid=f3&{}&fields=f12,f13,f14'
     session = requests.Session()
+    s = 1
+    p = 200
     n = random.randint(1, 99)
-    res = session.get(url.format(n, 20, fs), headers={'User-Agent': ua, 'host': f'{n}.push2.eastmoney.com'})
+    res = session.get(url.format(n, s, p, fs), headers={'User-Agent': ua, 'host': f'{n}.push2.eastmoney.com'})
+    lis = []
+    for i in res.json()['data']['diff']:
+        lis.append(f'{i["f13"]}.{i["f12"]}')
     count = res.json()['data']['total']
-    n = random.randint(1, 99)
-    resp = session.get(url.format(n, count, fs), headers={'User-Agent': ua, 'host': f'{n}.push2.eastmoney.com'})
-    res = []
-    for i in resp.json()['data']['diff']:
-        res.append(f'{i["f13"]}.{i["f12"]}')
-    return res
+    if count <= p:
+        return lis
+    e, r = count // p, count % p
+    if r:
+        e += 1
+    session = get_aio_session()
+    loop = get_event_loop()
+    sem = create_semaphore(16)
+    tasks = [get_stocks(session, sem, url, i, p, fs, ua) for i in range(2, e + 1)]
+    res = loop.run_until_complete(gather(*tasks))
+    loop.run_until_complete(session.close())
+    for i in res:
+        for j in json.loads(i)['data']['diff']:
+            lis.append(f'{j["f13"]}.{j["f12"]}')
+    return lis
 
 
 def is_legal_file_name(filename: str):
