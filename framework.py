@@ -584,7 +584,6 @@ class Market:
         _hash = {}
         for index, data in obj.items():
             if index == 'date_info':
-                print(1)
                 continue
             self._hashtable[index] = hash_value
             sl_hash = hash_value % n
