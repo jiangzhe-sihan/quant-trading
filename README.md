@@ -39,7 +39,7 @@ pip install mplfinance
 ```
 - 启动程序
 
-将此部分源码放在一个`src`文件夹当中，执行以下脚本即可启动自研量化交易系统：
+在[配置目录](https://github.com/jiangzhe-sihan/quant-trading/tree/profile)下新建`src`文件夹，将此部分源码放入`src`文件夹中，执行以下脚本即可启动自研量化交易系统：
 ```shell
 cd .\src
 python main.py
