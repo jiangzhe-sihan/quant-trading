@@ -61,7 +61,7 @@ def func(pool, stime, ctime, callback):
         return r, scode
     loop = new_event_loop()
     session = get_aio_session()
-    sem = create_semaphore(16)
+    sem = create_semaphore(50)
     task = [get_kline(session, sem, i) for i in pool]
     task_res = loop.run_until_complete(gather(*task))
     loop.run_until_complete(session.close())
