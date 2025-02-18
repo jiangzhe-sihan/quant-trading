@@ -42,7 +42,7 @@
 
   应用程序启动脚本。
 ## 部署运行
-将存放源码分支的目录命名为`src`，放入该分支的目录中， 在`Windows`下运行`start.bat`即可启动应用程序。
+将存放[源码分支](https://github.com/jiangzhe-sihan/quant-trading)的目录命名为`src`，放入该分支的目录中， 在`Windows`下运行`start.bat`即可启动应用程序。
 ## 更新记录
 ### 2024/11/16
 - 新加了一些有趣的策略
