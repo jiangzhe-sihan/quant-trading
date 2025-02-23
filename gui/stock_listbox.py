@@ -7,12 +7,15 @@ from gui.scene import SceneSetting
 from gui.subwindow import SubWindow
 
 import logging
+import pypinyin
+import re
 
 
 class StockListbox(tk.Listbox):
     def __init__(self, master, **kw):
         super().__init__(master, **kw)
         self._info = {}
+        self._search_content = []
         self._player = None
         self.bind('<Double-1>', self._double_click)
         self.bind('<Button-3>', self._right_click)
@@ -23,11 +26,54 @@ class StockListbox(tk.Listbox):
         self._info = info
         self._player = player
 
+    def insert(self, index, *elements):
+        super().insert(index, *elements)
+        elem = list(elements)
+        for i in range(len(elem)):
+            first = elem[i].strip().lower()
+            name = re.sub(r'[- /]', '', first.split(']')[1])
+            elem[i] = first + '[' + name
+            piny = pypinyin.slug(name, 4, separator='')
+            if piny != name:
+                elem[i] += '[' + piny
+        if index == 'end':
+            self._search_content.extend(elem)
+            return
+        else:
+            index = int(index)
+        a, b = self._search_content[:index], self._search_content[index:]
+        a.extend(elem)
+        a.extend(b)
+        self._search_content = a
+
+    def delete(self, first, last=None):
+        super().delete(first, last)
+        first = int(first)
+        if last == 'end':
+            last = len(self._search_content)
+        else:
+            last = int(last)
+        for i in range(first, last):
+            self._search_content.pop(first)
+
+    def get(self, first, last=None):
+        first = int(first)
+        if last is None:
+            return self._search_content[first]
+        if last == 'end':
+            last = len(self._search_content)
+        else:
+            last = int(last)
+        return self._search_content[first:last]
+
+    def getk(self, first, last=None):
+        return super().get(first, last)
+
     def _double_click(self, event):
         cur = self.curselection()
         if not cur:
             return
-        symbol = self.get(cur[0])
+        symbol = self.getk(cur[0])
         self._show_evaluate(symbol)
 
     def _right_click(self, event):
@@ -36,7 +82,7 @@ class StockListbox(tk.Listbox):
             return
         if cur[0] != self.nearest(event.y):
             return
-        symbol = self.get(cur[0])
+        symbol = self.getk(cur[0])
         mu = tk.Menu(self, tearoff=0)
         mu.add_command(label='查看', command=lambda: self._show_evaluate(symbol))
         mu.add_command(label='绘制k线', command=lambda: self._draw_kline(symbol))

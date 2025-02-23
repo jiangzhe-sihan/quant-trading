@@ -36,6 +36,7 @@ pip install numpy
 pip install pandas
 pip install matplotlib
 pip install mplfinance
+pip install pypinyin
 ```
 - 启动程序
 
@@ -46,6 +47,10 @@ python main.py
 ```
 或是在`Windows`下运行配置部分中的`start.bat`来启动应用程序。
 ## 更新记录
+### 2025/2/24
+- 优化搜索功能，取消全字匹配，支持拼音首字母
+> *新版搜索需要添加`pypinyin`依赖
+- 修复ema、sma、rsi、lwr指标的计算偏差
 ### 2025/2/17
 - 新增内置池：复杂杠杆
 ### 2025/1/18

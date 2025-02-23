@@ -72,7 +72,7 @@ class ListboxSearcher(ttk.Frame):
         self.search()
 
     def search(self):
-        content = self._et_content.get()
+        content = self._et_content.get().strip().lower()
         self._res.clear()
         self._index = -1
         if content == '':

@@ -289,42 +289,44 @@ class KLine:
 
     def ema(self, n: int, func: str | FunctionType, *args, **kw):
         """指数移动平均"""
-        a = 0
-        b = 0
-        for i in range(n):
-            a += self.get_history_value(i, func, *args, **kw) * (n - i)
-            b += (i + 1)
-        return a / b
+        li = []
+        ptr = self
+        while ptr is not None:
+            li.insert(0, ptr.ref(0, func, *args, **kw))
+            ptr = ptr.previous
+        return pd.Series(li).ewm(span=n, adjust=False).mean().tolist()[-1]
 
     def sma(self, n: int, m: int, func: str | FunctionType, *args, **kw):
         """加权移动平均"""
-        res = m * self.get_history_value(n - 1, func, *args, **kw) / 2
-        for i in range(n - 1):
-            res = (m * self.get_history_value(n - i - 2, func, *args, **kw) + (i + 1) * res) / (i + 3)
+        li = []
+        ptr = self
+        while ptr is not None:
+            li.insert(0, ptr.ref(0, func, *args, **kw))
+            ptr = ptr.previous
+        return pd.Series(li).ewm(com=n-m).mean().tolist()[-1]
+
+    def _dif(self, op=None):
+        res = self.close - self.ref(1, 'close')
+        if op == 'max':
+            return max(res, 0)
+        elif op == 'abs':
+            return abs(res)
         return res
 
-    def rsi(self, m1: int = 6, m2: int = 12, m3: int = 24):
+    def rsi(self, n: int):
         """计算rsi指标值"""
+        a = self.sma(n, 1, '_dif', 'max')
+        if a == 0:
+            return 0
+        return 100 * a / self.sma(n, 1, '_dif', 'abs')
+
+    def rsi_group(self, m1: int = 6, m2: int = 12, m3: int = 24):
+        """计算一组rsi指标值"""
         if not m1 < m2 < m3:
             raise ValueError('参数必须从小到大排列！')
         res = []
         for c in (m1, m2, m3):
-            ptr = self
-            a = 0
-            b = 0
-            n = 0
-            while ptr.previous is not None and n < c:
-                ptr = ptr.previous
-                n += 1
-            while n:
-                i = ptr.close - ptr.previous.close if ptr.previous else ptr.close - ptr.open
-                if i >= 0:
-                    a = ((c - 1) * a + i) / c
-                else:
-                    b = ((c - 1) * b + i * -1) / c
-                n -= 1
-                ptr = ptr.next
-            res.append(0 if a == 0 else a / (a + b))
+            res.append(self.rsi(c))
         return res
 
     def _tr(self):
@@ -346,10 +348,10 @@ class KLine:
         return 100 * (imax - self.close) / (imax - imin) if imax != imin else 0
 
     def _lwr1(self, n: int = 9, m1: int = 3):
-        return self.ma(m1, 'rsv', n)
+        return self.sma(m1, 1, 'rsv', n)
 
     def _lwr2(self, n: int = 3, m1: int = 9, m2: int = 3):
-        return self.ma(n, '_lwr1', m1, m2)
+        return self.sma(n, 1, '_lwr1', m1, m2)
 
     def lwr(self, n: int = 9, m1: int = 3, m2: int = 3):
         """计算lwr指标值"""

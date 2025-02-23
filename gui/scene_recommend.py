@@ -20,7 +20,7 @@ class SceneRecommend(Scene):
         self.fm_card_count.pack(pady=5)
         self.lb_count = ttk.Label(self.fm_card_count, text='发牌数：')
         self.lb_count.grid(row=0, column=0)
-        self.spb_count = ttk.Spinbox(self.fm_card_count, from_=1, to=1000, width=5)
+        self.spb_count = ttk.Spinbox(self.fm_card_count, from_=1, to=1500, width=5)
         self.spb_count.config(validate='all')
         self.spb_count.config(validatecommand=(self.register(self._verify_num), '%P'))
         self.spb_count.set(100)
