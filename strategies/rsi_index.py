@@ -3,7 +3,7 @@
 
 def func(self):
     for k, v in self.market.tell.items():
-        r1, r2, r3 = v.rsi()
+        r1, r2, r3 = v.rsi_group()
         std = 2 * r2 - r3 + v.increase
         if r1 <= r2 <= r3:
             if r1 < std and r1 < .3 or r1 < .2:
