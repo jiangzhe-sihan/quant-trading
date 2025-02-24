@@ -20,10 +20,12 @@ class SceneRecommend(Scene):
         self.fm_card_count.pack(pady=5)
         self.lb_count = ttk.Label(self.fm_card_count, text='发牌数：')
         self.lb_count.grid(row=0, column=0)
-        self.spb_count = ttk.Spinbox(self.fm_card_count, from_=1, to=1500, width=5)
+        self.max_k = 1500
+        self.default_k = 100
+        self.spb_count = ttk.Spinbox(self.fm_card_count, from_=1, to=self.max_k, width=5)
         self.spb_count.config(validate='all')
         self.spb_count.config(validatecommand=(self.register(self._verify_num), '%P'))
-        self.spb_count.set(100)
+        self.spb_count.set(self.default_k)
         self.spb_count.grid(row=0, column=1)
         self._cfg = self.controller.setting
         self._flashing = False
@@ -37,11 +39,10 @@ class SceneRecommend(Scene):
         self._g = 0
         self._b = 0
 
-    @staticmethod
-    def _verify_num(content):
+    def _verify_num(self, content):
         if content == '':
             return True
-        if content.isdigit() and 1 <= int(content) <= 1000:
+        if content.isdigit() and 1 <= int(content) <= self.max_k:
             return True
         return False
 
