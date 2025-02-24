@@ -100,7 +100,8 @@ class Date:
 
 class KLine:
     """k线"""
-    def __init__(self, date: datetime.datetime, src: dict[str, int | float]):
+    def __init__(self, name: str, date: datetime.datetime, src: dict[str, int | float]):
+        self.name = name
         self.date = date  # 日期
         self.open = src['open']  # 开盘价
         self.high = src['high']  # 最高价
@@ -192,23 +193,13 @@ class KLine:
 
     def ma(self, cycle: int, func: str | FunctionType, *args, **kw):
         """移动均线"""
-        total = 0
-        ptr = self
-        i = 0
-        while i < cycle:
-            if ptr is None:
-                break
-            if isinstance(func, str):
-                val = ptr.__getattribute__(func)
-                if isinstance(val, (int, float)):
-                    total += val
-                else:
-                    total += val(*args, **kw)
-            else:
-                total += func(ptr)
-            ptr = ptr.previous
-            i += 1
-        return total / i
+        idf = f'ma_{self.name}_{cycle}_{func}_{args}_{kw}'
+        if idf in Investor.cache:
+            return Investor.cache[idf][self.date]
+        df = self._get_series(func, *args, **kw)
+        res = df['value'].rolling(cycle, 1).mean()
+        Investor.cache[idf] = res
+        return res[self.date]
 
     def ndup(self, n: int):
         """连续n日上涨"""
@@ -287,23 +278,39 @@ class KLine:
             span -= 1
         return res
 
-    def ema(self, n: int, func: str | FunctionType, *args, **kw):
-        """指数移动平均"""
+    def _get_series(self, func: str | FunctionType, *args, **kw):
         li = []
         ptr = self
         while ptr is not None:
-            li.insert(0, ptr.ref(0, func, *args, **kw))
+            li.insert(0, (ptr.date, ptr.ref(0, func, *args, **kw)))
             ptr = ptr.previous
-        return pd.Series(li).ewm(span=n, adjust=False).mean().tolist()[-1]
+        ptr = self.next
+        while ptr is not None:
+            li.append((ptr.date, ptr.ref(0, func, *args, **kw)))
+            ptr = ptr.next
+        df = pd.DataFrame(li, columns=('date', 'value'))
+        df = df.set_index('date')
+        return df
+
+    def ema(self, n: int, func: str | FunctionType, *args, **kw):
+        """指数移动平均"""
+        idf = f'ema_{self.name}_{n}_{func}_{args}_{kw}'
+        if idf in Investor.cache:
+            return Investor.cache[idf][self.date]
+        df = self._get_series(func, *args, **kw)
+        res = df['value'].ewm(span=n, adjust=False).mean()
+        Investor.cache[idf] = res
+        return res[self.date]
 
     def sma(self, n: int, m: int, func: str | FunctionType, *args, **kw):
         """加权移动平均"""
-        li = []
-        ptr = self
-        while ptr is not None:
-            li.insert(0, ptr.ref(0, func, *args, **kw))
-            ptr = ptr.previous
-        return pd.Series(li).ewm(com=n-m).mean().tolist()[-1]
+        idf = f'sma_{self.name}_{n}_{m}_{func}_{args}_{kw}'
+        if idf in Investor.cache:
+            return Investor.cache[idf][self.date]
+        df = self._get_series(func, *args, **kw)
+        res = df['value'].ewm(com=n-m).mean()
+        Investor.cache[idf] = res
+        return res[self.date]
 
     def _dif(self, op=None):
         res = self.close - self.ref(1, 'close')
@@ -356,6 +363,16 @@ class KLine:
     def lwr(self, n: int = 9, m1: int = 3, m2: int = 3):
         """计算lwr指标值"""
         return self._lwr1(n, m1), self._lwr2(m2, n, m1)
+
+    def _dif_macd(self, short: int, long: int):
+        return self.ema(short, 'close') - self.ema(long, 'close')
+
+    def macd(self, short: int = 12, long: int = 26, m: int = 9):
+        """计算macd指标"""
+        dif = self._dif_macd(short, long)
+        dea = self.ema(m, '_dif_macd', short, long)
+        macd = (dif - dea) * 2
+        return dif, dea, macd
 
     def bia(self, n: int, func: str | FunctionType):
         """计算指标乖离率"""
@@ -578,8 +595,9 @@ class Market:
     def _load_from_obj(self, obj: dict[str, list[dict[str, str | int | float]]],
                        prop: list[tuple[str, FunctionType]], callback: FunctionType):
         """从爬虫返回的对象加载股票数据"""
-        # 先清空哈希表
+        # 先清空哈希表和kl缓存
         self._data.clear()
+        Investor.clear_cache()
         # 加载数据
         hash_value = 0
         n = ceil(get_max_cpu_count() * .5)
@@ -616,7 +634,7 @@ class Market:
                 # 以日期作为索引存储标的日k
                 if date not in self._data:
                     self._data[date] = np.full(len(obj), None)
-                kline = KLine(date, data_day)
+                kline = KLine(index, date, data_day)
                 if last is not None:
                     last.insert(kline)
                 if prop is not None:
@@ -808,6 +826,12 @@ class Order:
 
 class Investor:
     """投资者"""
+    cache = {}
+
+    @classmethod
+    def clear_cache(cls):
+        cls.cache.clear()
+
     def __init__(self, market: Market):
         self.market = market  # 投资的市场
         self.li_buy: set[str] = set()  # 买入集合

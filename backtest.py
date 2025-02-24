@@ -7,6 +7,7 @@ from framework import Investor
 
 def run_backtest(investor: Investor, strategies: Iterable, callback: FunctionType = None):
     """运行回测"""
+    Investor.clear_cache()
     while True:
         for f in strategies:
             f(investor)
