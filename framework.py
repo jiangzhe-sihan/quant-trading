@@ -194,9 +194,9 @@ class KLine:
         if interval < 0:
             raise ValueError('统计区间不能小于0！')
         if interval == 0:
-            interval = self._get_series(func).shape[0]
+            interval = self.get_series(func).shape[0]
         idf = f'cnt_{self.name}_{func}_{interval}'
-        return self._load_cache(idf, lambda: self._get_series(func).rolling(interval, 1).sum())[self.date]
+        return self._load_cache(idf, lambda: self.get_series(func).rolling(interval, 1).sum())[self.date]
 
     def ma(self, cycle: int, func: str | FunctionType | pd.Series, *args, **kw):
         """移动均线"""
@@ -204,7 +204,7 @@ class KLine:
             idf = f'ma_{id(func)}'
             return self._load_cache(idf, func.rolling(cycle, 1).mean)
         idf = f'ma_{self.name}_{cycle}_{func}_{args}_{kw}'
-        return self._load_cache(idf, lambda: self._get_series(func, *args, **kw).rolling(cycle, 1).mean())[self.date]
+        return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).rolling(cycle, 1).mean())[self.date]
 
     def ndup(self, n: int):
         """连续n日上涨"""
@@ -237,7 +237,7 @@ class KLine:
         """获取历史属性值"""
         if span == 0:
             return self._get_value(self, func, *args, **kw)
-        ln = self._get_series(func, *args, **kw)
+        ln = self.get_series(func, *args, **kw)
         idx = ln.index.get_loc(self.date) - span
         if idx < 0:
             idx = 0
@@ -252,7 +252,7 @@ class KLine:
             idf = f'hhv_{id(func)}'
             return self._load_cache(idf, func.rolling(span, 1).max)
         idf = f'hhv_{self.name}_{span}_{func}_{args}_{kw}'
-        return self._load_cache(idf, lambda: self._get_series(func, *args, **kw).rolling(span, 1).max())[self.date]
+        return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).rolling(span, 1).max())[self.date]
 
     def llv(self, span: int, func: str | FunctionType, *args, **kw):
         return self.interval_min(span, func, *args, **kw)
@@ -263,9 +263,9 @@ class KLine:
             idf = f'hhv_{id(func)}'
             return self._load_cache(idf, func.rolling(span, 1).min)
         idf = f'hhv_{self.name}_{span}_{func}_{args}_{kw}'
-        return self._load_cache(idf, lambda: self._get_series(func, *args, **kw).rolling(span, 1).min())[self.date]
+        return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).rolling(span, 1).min())[self.date]
 
-    def _get_series(self, func: str | FunctionType, *args, **kw):
+    def get_series(self, func: str | FunctionType, *args, **kw):
         if isinstance(func, str):
             match func:
                 case 'ma':
@@ -303,7 +303,7 @@ class KLine:
             idf = f'ema_{id(func)}'
             return self._load_cache(idf, func.ewm(span=n, adjust=False).mean)
         idf = f'ema_{self.name}_{n}_{func}_{args}_{kw}'
-        return self._load_cache(idf, lambda: self._get_series(func, *args, **kw).ewm(span=n, adjust=False).mean())[self.date]
+        return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).ewm(span=n, adjust=False).mean())[self.date]
 
     def sma(self, n: int, m: int, func: str | FunctionType | pd.Series, *args, **kw):
         """加权移动平均"""
@@ -311,7 +311,7 @@ class KLine:
             idf = f'sma_{id(func)}'
             return self._load_cache(idf, func.ewm(com=n-m).mean)
         idf = f'sma_{self.name}_{n}_{m}_{func}_{args}_{kw}'
-        return self._load_cache(idf, lambda: self._get_series(func, *args, **kw).ewm(com=n-m).mean())[self.date]
+        return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).ewm(com=n - m).mean())[self.date]
 
     def _dif(self, op=None):
         res = self.close - self.ref(1, 'close')
@@ -469,19 +469,19 @@ class KLine:
     def candle(self):
         """返回绘制蜡烛图使用的数据"""
         res = pd.DataFrame()
-        res['open'] = self._get_series('open')
-        res['high'] = self._get_series('high')
-        res['low'] = self._get_series('low')
-        res['close'] = self._get_series('close')
-        res['volume'] = self._get_series('volume')
-        res['change'] = self._get_series('change')
-        res['pct_change'] = 100 * self._get_series('increase')
-        res['last_close'] = self._get_series('last_close')
-        res['amount'] = self._get_series('amount')
-        res['hs'] = self._get_series('hs')
-        res['ma5'] = self._get_series('ma', 5, 'close')
-        res['ma10'] = self._get_series('ma', 10, 'close')
-        res['ma20'] = self._get_series('ma', 20, 'close')
+        res['open'] = self.get_series('open')
+        res['high'] = self.get_series('high')
+        res['low'] = self.get_series('low')
+        res['close'] = self.get_series('close')
+        res['volume'] = self.get_series('volume')
+        res['change'] = self.get_series('change')
+        res['pct_change'] = 100 * self.get_series('increase')
+        res['last_close'] = self.get_series('last_close')
+        res['amount'] = self.get_series('amount')
+        res['hs'] = self.get_series('hs')
+        res['ma5'] = self.get_series('ma', 5, 'close')
+        res['ma10'] = self.get_series('ma', 10, 'close')
+        res['ma20'] = self.get_series('ma', 20, 'close')
         return res
 
 
