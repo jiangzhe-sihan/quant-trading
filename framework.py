@@ -195,7 +195,7 @@ class KLine:
             raise ValueError('统计区间不能小于0！')
         if interval == 0:
             interval = self.get_series(func).shape[0]
-        idf = f'cnt_{self.name}_{func}_{interval}'
+        idf = f'cnt_{self.name}_{func.__code__.co_linetable.hex()}_{interval}'
         return self._load_cache(idf, lambda: self.get_series(func).rolling(interval, 1).sum())[self.date]
 
     def ma(self, cycle: int, func: str | FunctionType | pd.Series, *args, **kw):
