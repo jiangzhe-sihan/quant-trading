@@ -193,27 +193,16 @@ class KLine:
         """统计满足条件的k线数量"""
         if interval < 0:
             raise ValueError('统计区间不能小于0！')
-        res = 0
         if interval == 0:
-            ptr = self
-            while ptr is not None:
-                if func(ptr):
-                    res += 1
-                ptr = ptr.previous
-        else:
-            ptr = self
-            while ptr is not None and interval > 0:
-                if func(ptr):
-                    res += 1
-                ptr = ptr.previous
-                interval -= 1
-        return res
+            interval = self._get_series(func).shape[0]
+        idf = f'cnt_{self.name}_{func}_{interval}'
+        return self._load_cache(idf, lambda: self._get_series(func).rolling(interval, 1).sum())[self.date]
 
     def ma(self, cycle: int, func: str | FunctionType | pd.Series, *args, **kw):
         """移动均线"""
         if isinstance(func, pd.Series):
             idf = f'ma_{id(func)}'
-            return self._load_cache(idf, func.rolling(cycle, 1).mean)[self.date]
+            return self._load_cache(idf, func.rolling(cycle, 1).mean)
         idf = f'ma_{self.name}_{cycle}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self._get_series(func, *args, **kw).rolling(cycle, 1).mean())[self.date]
 
@@ -246,53 +235,35 @@ class KLine:
 
     def get_history_value(self, span: int, func: str | FunctionType, *args, **kw):
         """获取历史属性值"""
-        ptr = self
-        while span:
-            if ptr.previous is None:
-                break
-            ptr = ptr.previous
-            span -= 1
-        return self._get_value(ptr, func, *args, **kw)
+        if span == 0:
+            return self._get_value(self, func, *args, **kw)
+        ln = self._get_series(func, *args, **kw)
+        idx = ln.index.get_loc(self.date) - span
+        if idx < 0:
+            idx = 0
+        return ln.iloc[idx]
 
     def hhv(self, span: int, func: str | FunctionType, *args, **kw):
         return self.interval_max(span, func, *args, **kw)
 
     def interval_max(self, span: int, func: str | FunctionType, *args, **kw):
         """获取属性的区间最大值"""
-        ptr = self
-        if isinstance(func, str):
-            res = ptr.__getattribute__(func)
-        else:
-            res = func(ptr)
-        while span:
-            if ptr.previous is None:
-                break
-            ptr = ptr.previous
-            ref = self._get_value(ptr, func, *args, **kw)
-            if ref > res:
-                res = ref
-            span -= 1
-        return res
+        if isinstance(func, pd.Series):
+            idf = f'hhv_{id(func)}'
+            return self._load_cache(idf, func.rolling(span, 1).max)
+        idf = f'hhv_{self.name}_{span}_{func}_{args}_{kw}'
+        return self._load_cache(idf, lambda: self._get_series(func, *args, **kw).rolling(span, 1).max())[self.date]
 
     def llv(self, span: int, func: str | FunctionType, *args, **kw):
         return self.interval_min(span, func, *args, **kw)
 
     def interval_min(self, span: int, func: str | FunctionType, *args, **kw):
         """获取属性的区间最小值"""
-        ptr = self
-        if isinstance(func, str):
-            res = ptr.__getattribute__(func)
-        else:
-            res = func(ptr)
-        while span:
-            if ptr.previous is None:
-                break
-            ptr = ptr.previous
-            ref = self._get_value(ptr, func, *args, **kw)
-            if ref < res:
-                res = ref
-            span -= 1
-        return res
+        if isinstance(func, pd.Series):
+            idf = f'hhv_{id(func)}'
+            return self._load_cache(idf, func.rolling(span, 1).min)
+        idf = f'hhv_{self.name}_{span}_{func}_{args}_{kw}'
+        return self._load_cache(idf, lambda: self._get_series(func, *args, **kw).rolling(span, 1).min())[self.date]
 
     def _get_series(self, func: str | FunctionType, *args, **kw):
         if isinstance(func, str):
@@ -330,7 +301,7 @@ class KLine:
         """指数移动平均"""
         if isinstance(func, pd.Series):
             idf = f'ema_{id(func)}'
-            return self._load_cache(idf, func.ewm(span=n, adjust=False).mean)[self.date]
+            return self._load_cache(idf, func.ewm(span=n, adjust=False).mean)
         idf = f'ema_{self.name}_{n}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self._get_series(func, *args, **kw).ewm(span=n, adjust=False).mean())[self.date]
 
@@ -338,7 +309,7 @@ class KLine:
         """加权移动平均"""
         if isinstance(func, pd.Series):
             idf = f'sma_{id(func)}'
-            return self._load_cache(idf, func.ewm(com=n-m).mean)[self.date]
+            return self._load_cache(idf, func.ewm(com=n-m).mean)
         idf = f'sma_{self.name}_{n}_{m}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self._get_series(func, *args, **kw).ewm(com=n-m).mean())[self.date]
 
@@ -660,13 +631,15 @@ class Market:
                 kline = KLine(index, date, data_day, self._cache)
                 if last is not None:
                     last.insert(kline)
-                if prop is not None:
-                    args = []
-                    for f in prop:
-                        args.append(f[1](kline))
-                    kline.vec = Vector(*args)
                 self._data[date][hash_value] = kline
                 last = kline
+            if prop is not None:
+                while last is not None:
+                    args = []
+                    for f in prop:
+                        args.append(f[1](last))
+                    last.vec = Vector(*args)
+                    last = last.previous
             hash_value += 1
             if callback is not None:
                 ret = callback()
