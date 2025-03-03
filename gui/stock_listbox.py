@@ -176,7 +176,7 @@ class StockListbox(tk.Listbox):
         self._eval_wnd = None
 
     def _draw_kline(self, symbol):
-        candle = self._info[symbol].candle
+        candle = self._info[symbol].candle()
         p = self._info.popitem()
         self._info.update(dict([p]))
         date = p[1].get_datetime()
