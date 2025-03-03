@@ -208,27 +208,11 @@ class KLine:
 
     def ndup(self, n: int):
         """连续n日上涨"""
-        ptr = self
-        while n > 0:
-            if ptr is None:
-                return False
-            if ptr.increase <= 0:
-                return False
-            ptr = ptr.previous
-            n -= 1
-        return True
+        return self.count(lambda x: x.increase > 0, n) == n
 
     def nddown(self, n: int):
         """连续n日下跌"""
-        ptr = self
-        while n > 0:
-            if ptr is None:
-                return False
-            if ptr.increase > 0:
-                return False
-            ptr = ptr.previous
-            n -= 1
-        return True
+        return self.count(lambda x: x.increase <= 0, n) == n
 
     def ref(self, span: int, func: str | FunctionType, *args, **kw):
         return self.get_history_value(span, func, *args, **kw)
