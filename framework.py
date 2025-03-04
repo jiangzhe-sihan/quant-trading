@@ -189,12 +189,17 @@ class KLine:
             return self.volume / self.previous.ma(5, 'volume')
         return 0
 
-    def count(self, func, interval=0):
+    def count(self, func: FunctionType | pd.Series, interval=0):
         """统计满足条件的k线数量"""
         if interval < 0:
             raise ValueError('统计区间不能小于0！')
+        if isinstance(func, pd.Series):
+            if interval == 0:
+                interval = func.index.get_loc(self.date) + 1
+            idf = f'cnt_{id(func)}_{interval}'
+            return self._load_cache(idf, func.rolling(interval, 1).sum)
         if interval == 0:
-            interval = self.get_series(func).shape[0]
+            interval = self.get_series(func).index.get_loc(self.date) + 1
         idf = f'cnt_{self.name}_{func.__code__.co_linetable.hex()}_{interval}'
         return self._load_cache(idf, lambda: self.get_series(func).rolling(interval, 1).sum())[self.date]
 
