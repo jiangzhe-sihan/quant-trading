@@ -101,7 +101,8 @@ class Date:
 class KLine:
     """k线"""
     def __init__(self, name: str, date: datetime.datetime, src: dict[str, int | float], cache=None):
-        self.name = name  # 标的名
+        self.name = name.split(']')[1]  # 标的名
+        self.code = name.split(']')[0][1:]  # 标的代码
         self.date = date  # 日期
         if cache is None:
             cache = {}
@@ -200,15 +201,15 @@ class KLine:
             return self._load_cache(idf, func.rolling(interval, 1).sum)
         if interval == 0:
             interval = self.get_series(func).index.get_loc(self.date) + 1
-        idf = f'cnt_{self.name}_{func.__code__.co_linetable.hex()}_{interval}'
+        idf = f'cnt_{self.code}_{func.__code__.co_linetable.hex()}_{interval}'
         return self._load_cache(idf, lambda: self.get_series(func).rolling(interval, 1).sum())[self.date]
 
     def ma(self, cycle: int, func: str | FunctionType | pd.Series, *args, **kw):
         """移动均线"""
         if isinstance(func, pd.Series):
-            idf = f'ma_{id(func)}'
+            idf = f'ma_{id(func)}_{cycle}'
             return self._load_cache(idf, func.rolling(cycle, 1).mean)
-        idf = f'ma_{self.name}_{cycle}_{func}_{args}_{kw}'
+        idf = f'ma_{self.code}_{cycle}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).rolling(cycle, 1).mean())[self.date]
 
     def ndup(self, n: int):
@@ -238,9 +239,9 @@ class KLine:
     def interval_max(self, span: int, func: str | FunctionType, *args, **kw):
         """获取属性的区间最大值"""
         if isinstance(func, pd.Series):
-            idf = f'hhv_{id(func)}'
+            idf = f'hhv_{id(func)}_{span}'
             return self._load_cache(idf, func.rolling(span, 1).max)
-        idf = f'hhv_{self.name}_{span}_{func}_{args}_{kw}'
+        idf = f'hhv_{self.code}_{span}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).rolling(span, 1).max())[self.date]
 
     def llv(self, span: int, func: str | FunctionType, *args, **kw):
@@ -249,9 +250,9 @@ class KLine:
     def interval_min(self, span: int, func: str | FunctionType, *args, **kw):
         """获取属性的区间最小值"""
         if isinstance(func, pd.Series):
-            idf = f'hhv_{id(func)}'
+            idf = f'hhv_{id(func)}_{span}'
             return self._load_cache(idf, func.rolling(span, 1).min)
-        idf = f'hhv_{self.name}_{span}_{func}_{args}_{kw}'
+        idf = f'hhv_{self.code}_{span}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).rolling(span, 1).min())[self.date]
 
     def get_series(self, func: str | FunctionType, *args, **kw):
@@ -259,17 +260,17 @@ class KLine:
             match func:
                 case 'ma':
                     n, _func = args[:2]
-                    idf = f'ma_{self.name}_{n}_{_func}_{args[2:]}_{kw}'
+                    idf = f'ma_{self.code}_{n}_{_func}_{args[2:]}_{kw}'
                 case 'ema':
                     n, _func = args[:2]
-                    idf = f'ema_{self.name}_{n}_{_func}_{args[2:]}_{kw}'
+                    idf = f'ema_{self.code}_{n}_{_func}_{args[2:]}_{kw}'
                 case 'sma':
                     n, m, _func = args[:3]
-                    idf = f'sma_{self.name}_{n}_{m}_{_func}_{args[3:]}_{kw}'
+                    idf = f'sma_{self.code}_{n}_{m}_{_func}_{args[3:]}_{kw}'
                 case default:
-                    idf = f'ln_{self.name}_{func}_{args}_{kw}'
+                    idf = f'ln_{self.code}_{func}_{args}_{kw}'
         else:
-            idf = f'ln_{self.name}_{func}_{args}_{kw}'
+            idf = f'ln_{self.code}_{func}_{args}_{kw}'
         if idf in self._cache:
             return self._cache[idf]
         li = []
@@ -289,17 +290,17 @@ class KLine:
     def ema(self, n: int, func: str | FunctionType | pd.Series, *args, **kw):
         """指数移动平均"""
         if isinstance(func, pd.Series):
-            idf = f'ema_{id(func)}'
+            idf = f'ema_{id(func)}_{n}'
             return self._load_cache(idf, func.ewm(span=n, adjust=False).mean)
-        idf = f'ema_{self.name}_{n}_{func}_{args}_{kw}'
+        idf = f'ema_{self.code}_{n}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).ewm(span=n, adjust=False).mean())[self.date]
 
     def sma(self, n: int, m: int, func: str | FunctionType | pd.Series, *args, **kw):
         """加权移动平均"""
         if isinstance(func, pd.Series):
-            idf = f'sma_{id(func)}'
+            idf = f'sma_{id(func)}_{n}_{m}'
             return self._load_cache(idf, func.ewm(com=n-m).mean)
-        idf = f'sma_{self.name}_{n}_{m}_{func}_{args}_{kw}'
+        idf = f'sma_{self.code}_{n}_{m}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).ewm(com=n - m).mean())[self.date]
 
     def _dif(self, op=None):
@@ -363,6 +364,25 @@ class KLine:
         dea = self.ema(m, '_dif_macd', short, long)
         macd = (dif - dea) * 2
         return dif, dea, macd
+
+    def avedev(self, n: int, func: str | FunctionType | pd.Series, *args, **kw):
+        """计算平均绝对偏差"""
+        if isinstance(func, pd.Series):
+            idf = f'avedev_{id(func)}_{n}'
+            return self._load_cache(idf, lambda: func.rolling(n, 1).apply(lambda x: (x - x.mean()).abs().mean()))
+        idf = f'avedev_{self.code}_{n}_{func}_{args}_{kw}'
+        return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).rolling(n, 1).apply(lambda x: (x - x.mean()).abs().mean()))
+
+    def cci(self, n: int = 14):
+        """计算cci指标"""
+        idf = f'cci_{self.code}_{n}'
+        res = self._load_cache(idf)
+        if res is not None:
+            return res[self.date]
+        typ = (self.get_series('close') + self.get_series('high') + self.get_series('low')) / 3
+        cci = (typ - self.ma(n, typ)) / (.015 * self.avedev(n, typ))
+        self._cache[idf] = cci
+        return cci[self.date]
 
     def bia(self, n: int, func: str | FunctionType):
         """计算指标乖离率"""
