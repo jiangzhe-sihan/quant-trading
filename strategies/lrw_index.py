@@ -2,7 +2,10 @@
 # DESCRIPTION=LWR指标，死叉买入，金叉卖出。
 
 
-prop = []
+prop = [
+    ('open', lambda x: x.lwr()),
+    ('open1', lambda x: x.ref(1, 'lwr'))
+]
 
 
 def func(self):
@@ -12,7 +15,7 @@ def func(self):
         lwr1, lwr2 = v.lwr()
         plwr1, plwr2 = v.get_history_value(1, 'lwr')
         if plwr1 and plwr2:
-            if plwr1 > plwr2 and 93 < lwr1 < lwr2:
+            if plwr1 > plwr2 and lwr1 < lwr2:
                 self.li_buy.add(k)
             elif plwr1 < plwr2 and lwr1 > lwr2:
                 self.li_sell.add(k)
