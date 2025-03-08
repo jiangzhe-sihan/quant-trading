@@ -138,6 +138,18 @@ class KLine:
             return -res
         return res
 
+    @staticmethod
+    def zt_price(price, vol):
+        """计算涨停价"""
+        res = price * (1 + vol)
+        return round(res, 2)
+
+    @staticmethod
+    def dt_price(price, vol):
+        """计算涨停价"""
+        res = price * (1 - vol)
+        return round(res, 2)
+
     @property
     def increase_day(self):
         """日内涨幅"""
@@ -220,11 +232,13 @@ class KLine:
         """连续n日下跌"""
         return self.count(lambda x: x.increase <= 0, n) == n
 
-    def ref(self, span: int, func: str | FunctionType, *args, **kw):
+    def ref(self, span: int, func: str | FunctionType | pd.Series, *args, **kw):
         return self.get_history_value(span, func, *args, **kw)
 
-    def get_history_value(self, span: int, func: str | FunctionType, *args, **kw):
+    def get_history_value(self, span: int, func: str | FunctionType | pd.Series, *args, **kw):
         """获取历史属性值"""
+        if isinstance(func, pd.Series):
+            return func.shift(span)
         if span == 0:
             return self._get_value(self, func, *args, **kw)
         ln = self.get_series(func, *args, **kw)
@@ -233,10 +247,10 @@ class KLine:
             idx = 0
         return ln.iloc[idx]
 
-    def hhv(self, span: int, func: str | FunctionType, *args, **kw):
+    def hhv(self, span: int, func: str | FunctionType | pd.Series, *args, **kw):
         return self.interval_max(span, func, *args, **kw)
 
-    def interval_max(self, span: int, func: str | FunctionType, *args, **kw):
+    def interval_max(self, span: int, func: str | FunctionType | pd.Series, *args, **kw):
         """获取属性的区间最大值"""
         if isinstance(func, pd.Series):
             idf = f'hhv_{id(func)}_{span}'
@@ -244,15 +258,15 @@ class KLine:
         idf = f'hhv_{self.code}_{span}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).rolling(span, 1).max())[self.date]
 
-    def llv(self, span: int, func: str | FunctionType, *args, **kw):
+    def llv(self, span: int, func: str | FunctionType | pd.Series, *args, **kw):
         return self.interval_min(span, func, *args, **kw)
 
-    def interval_min(self, span: int, func: str | FunctionType, *args, **kw):
+    def interval_min(self, span: int, func: str | FunctionType | pd.Series, *args, **kw):
         """获取属性的区间最小值"""
         if isinstance(func, pd.Series):
-            idf = f'hhv_{id(func)}_{span}'
+            idf = f'llv_{id(func)}_{span}'
             return self._load_cache(idf, func.rolling(span, 1).min)
-        idf = f'hhv_{self.code}_{span}_{func}_{args}_{kw}'
+        idf = f'llv_{self.code}_{span}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).rolling(span, 1).min())[self.date]
 
     def get_series(self, func: str | FunctionType, *args, **kw):
@@ -303,20 +317,15 @@ class KLine:
         idf = f'sma_{self.code}_{n}_{m}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).ewm(com=n - m).mean())[self.date]
 
-    def _dif(self, op=None):
-        res = self.close - self.ref(1, 'close')
-        if op == 'max':
-            return max(res, 0)
-        elif op == 'abs':
-            return abs(res)
-        return res
-
     def rsi(self, n: int):
         """计算rsi指标值"""
-        a = self.sma(n, 1, '_dif', 'max')
-        if a == 0:
-            return 0
-        return 100 * a / self.sma(n, 1, '_dif', 'abs')
+        idf = f'rsi_{self.code}_{n}'
+        if idf in self._cache:
+            return self._cache[idf][self.date]
+        dif = self.get_series('close') - self.ref(1, self.get_series('close'))
+        res = self.sma(n, 1, np.maximum(dif, 0)) / self.sma(n, 1, abs(dif))
+        self._cache[idf] = res
+        return res[self.date]
 
     def rsi_group(self, m1: int = 6, m2: int = 12, m3: int = 24):
         """计算一组rsi指标值"""
