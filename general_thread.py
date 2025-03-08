@@ -43,6 +43,7 @@ def write_data(pool: list[str],
             fp.close()
             continue
         k = k.replace('*', '+')
+        k = re.sub(r'[\\/:*?"<>|]', ' ', k)
         fp = open(save_path + k + '.json', 'w+')
         json.dump(v, fp)
         fp.close()
