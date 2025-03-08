@@ -47,6 +47,10 @@ python main.py
 ```
 或是在`Windows`下运行配置部分中的`start.bat`来启动应用程序。
 ## 更新记录
+### 2025/3/8
+- 新增K线属性
+  - zt_price(price, vol) -> 按照指定幅度计算涨停价
+  - dt_price(price, vol) -> 按照指定幅度计算跌停价
 ### 2025/3/6
 - 新增K线属性：
   - avedev(n, func) -> 计算平均绝对偏差

@@ -146,7 +146,7 @@ class KLine:
 
     @staticmethod
     def dt_price(price, vol):
-        """计算涨停价"""
+        """计算跌停价"""
         res = price * (1 - vol)
         return round(res, 2)
 
