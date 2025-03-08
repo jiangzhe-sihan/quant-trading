@@ -51,6 +51,8 @@ python main.py
 - 新增K线属性
   - zt_price(price, vol) -> 按照指定幅度计算涨停价
   - dt_price(price, vol) -> 按照指定幅度计算跌停价
+- 支持向ref指标中传入Series序列
+- 进一步提高性能
 ### 2025/3/6
 - 新增K线属性：
   - avedev(n, func) -> 计算平均绝对偏差

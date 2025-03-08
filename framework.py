@@ -238,7 +238,7 @@ class KLine:
     def get_history_value(self, span: int, func: str | FunctionType | pd.Series, *args, **kw):
         """获取历史属性值"""
         if isinstance(func, pd.Series):
-            return func.shift(span)
+            return self._load_cache(f'ref_{id(func)}_{span}', lambda: func.shift(span))
         if span == 0:
             return self._get_value(self, func, *args, **kw)
         ln = self.get_series(func, *args, **kw)
