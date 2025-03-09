@@ -1,4 +1,5 @@
 import mplfinance as mpf
+import pandas
 from matplotlib.widgets import MultiCursor
 
 
@@ -62,19 +63,12 @@ normal_font_left = {
 
 
 class InterCandle:  # 定义一个交互K线图类
-    def __init__(self, data, my_style, symbol, signal, ctime):
+    def __init__(self, data: pandas.DataFrame, my_style, symbol, signal, ctime):
         # 初始化交互式K线图对象，历史数据作为唯一的参数用于初始化对象
         self.data = data
         self.style = my_style
         self._signal = signal
-        if self._signal is not None:
-            self.data.insert(0, 'buy', None)
-            self.data.insert(0, 'sell', None)
-            self.data.insert(0, 't', None)
-            for k, v in self._signal.iterrows():
-                self.data.loc[k, 'buy'] = v['buy']
-                self.data.loc[k, 'sell'] = v['sell']
-                self.data.loc[k, 't'] = v['t']
+        self._insert_signal()
         # 设置初始化的K线图显示区间起点为0，即显示第0到第99个交易日的数据（前100个数据）
         idx = self.data.index.get_loc(ctime)
         self.idx_start = idx if idx > 30 else 30 if len(data) >= 30 else len(data) - 1
@@ -133,6 +127,18 @@ class InterCandle:  # 定义一个交互K线图类
         self._ax_volume.clear()
         self.refresh_texts(self.data.iloc[self.idx_start])
         self.refresh_plot()
+
+    def _insert_signal(self):
+        if 'buy' in self.data:
+            return
+        if self._signal is not None:
+            self.data.insert(0, 'buy', None)
+            self.data.insert(0, 'sell', None)
+            self.data.insert(0, 't', None)
+            for k, v in self._signal.iterrows():
+                self.data.loc[k, 'buy'] = v['buy']
+                self.data.loc[k, 'sell'] = v['sell']
+                self.data.loc[k, 't'] = v['t']
 
     def refresh_plot(self, idx_start=None, idx_range=None):
         """ 根据最新的参数，重新绘制整个图表

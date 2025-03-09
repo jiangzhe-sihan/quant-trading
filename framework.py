@@ -271,20 +271,9 @@ class KLine:
 
     def get_series(self, func: str | FunctionType, *args, **kw):
         if isinstance(func, str):
-            match func:
-                case 'ma':
-                    n, _func = args[:2]
-                    idf = f'ma_{self.code}_{n}_{_func}_{args[2:]}_{kw}'
-                case 'ema':
-                    n, _func = args[:2]
-                    idf = f'ema_{self.code}_{n}_{_func}_{args[2:]}_{kw}'
-                case 'sma':
-                    n, m, _func = args[:3]
-                    idf = f'sma_{self.code}_{n}_{m}_{_func}_{args[3:]}_{kw}'
-                case default:
-                    idf = f'ln_{self.code}_{func}_{args}_{kw}'
+            idf = self.get_idf(func, self.code, *args, **kw)
         else:
-            idf = f'ln_{self.code}_{func}_{args}_{kw}'
+            idf = f'ln_{self.code}_{func.__code__.co_linetable.hex()}_{args}_{kw}'
         if idf in self._cache:
             return self._cache[idf]
         li = []
@@ -300,6 +289,37 @@ class KLine:
         df = df.set_index('date')['value']
         self._cache[idf] = df
         return df
+
+    @staticmethod
+    def get_idf(func, code, *args, **kw):
+        match func:
+            case 'ma':
+                n, _func = args[:2]
+                idf = f'ma_{code}_{n}_{_func}_{args[2:]}_{kw}'
+            case 'ema':
+                n, _func = args[:2]
+                idf = f'ema_{code}_{n}_{_func}_{args[2:]}_{kw}'
+            case 'sma':
+                n, m, _func = args[:3]
+                idf = f'sma_{code}_{n}_{m}_{_func}_{args[3:]}_{kw}'
+            case 'hhv':
+                span, _func = args[:2]
+                idf = f'hhv_{code}_{span}_{_func}_{args[2:]}_{kw}'
+            case 'llv':
+                span, _func = args[:2]
+                idf = f'llv_{code}_{span}_{_func}_{args[2:]}_{kw}'
+            case 'rsi':
+                n = args[:1]
+                idf = f'rsi_{code}_{n}'
+            case 'avedev':
+                n, _func = args[:2]
+                idf = f'avedev_{code}_{n}_{_func}_{args[2:]}_{kw}'
+            case 'cci':
+                n = args[:1] if args else 14
+                idf = f'cci_{code}_{n}'
+            case default:
+                idf = f'ln_{code}_{func}_{args}_{kw}'
+        return idf
 
     def ema(self, n: int, func: str | FunctionType | pd.Series, *args, **kw):
         """指数移动平均"""
@@ -336,7 +356,8 @@ class KLine:
             res.append(self.rsi(c))
         return res
 
-    def _tr(self):
+    def tr(self):
+        """真实波幅值"""
         return max(
             max(self.high - self.low, abs(self.previous.close - self.high if self.previous else self.close - self.high)),
             abs(self.previous.close - self.low if self.previous else self.close - self.low)
@@ -344,8 +365,8 @@ class KLine:
 
     def atr(self, n: int = 14):
         """计算atr指标值"""
-        tr = self._tr()
-        atr = self.ma(n, '_tr')
+        tr = self.tr()
+        atr = self.ma(n, 'tr')
         return tr, atr
 
     def rsv(self, n: int = 9):
@@ -354,25 +375,29 @@ class KLine:
         imin = self.interval_min(n, 'low')
         return 100 * (imax - self.close) / (imax - imin) if imax != imin else 0
 
-    def _lwr1(self, n: int = 9, m1: int = 3):
-        return self.sma(m1, 1, 'rsv', n)
-
-    def _lwr2(self, n: int = 3, m1: int = 9, m2: int = 3):
-        return self.sma(n, 1, '_lwr1', m1, m2)
-
     def lwr(self, n: int = 9, m1: int = 3, m2: int = 3):
         """计算lwr指标值"""
-        return self._lwr1(n, m1), self._lwr2(m2, n, m1)
-
-    def _dif_macd(self, short: int, long: int):
-        return self.ema(short, 'close') - self.ema(long, 'close')
+        idf = f'lwr_{self.code}_{n}_{m1}_{m2}'
+        if idf in self._cache:
+            res = self._cache[idf]
+            return res[0][self.date], res[1][self.date]
+        rsv = self.get_series('rsv', n)
+        lwr1 = self.sma(m1, 1, rsv)
+        lwr2 = self.sma(m2, 1, lwr1)
+        self._cache[idf] = lwr1, lwr2
+        return lwr1[self.date], lwr2[self.date]
 
     def macd(self, short: int = 12, long: int = 26, m: int = 9):
         """计算macd指标"""
-        dif = self._dif_macd(short, long)
-        dea = self.ema(m, '_dif_macd', short, long)
+        idf = f'macd_{self.code}_{short}_{long}_{m}'
+        if idf in self._cache:
+            res = self._cache[idf]
+            return res[0][self.date], res[1][self.date], res[2][self.date]
+        dif = self.ema(short, self.get_series('close')) - self.ema(long, self.get_series('close'))
+        dea = self.ema(m, dif)
         macd = (dif - dea) * 2
-        return dif, dea, macd
+        self._cache[idf] = dif, dea, macd
+        return dif[self.date], dea[self.date], macd[self.date]
 
     def avedev(self, n: int, func: str | FunctionType | pd.Series, *args, **kw):
         """计算平均绝对偏差"""
@@ -486,6 +511,9 @@ class KLine:
 
     def candle(self):
         """返回绘制蜡烛图使用的数据"""
+        idf = f'candle_{self.code}'
+        if idf in self._cache:
+            return self._cache[idf]
         res = pd.DataFrame()
         res['open'] = self.get_series('open')
         res['high'] = self.get_series('high')
@@ -500,6 +528,7 @@ class KLine:
         res['ma5'] = self.get_series('ma', 5, 'close')
         res['ma10'] = self.get_series('ma', 10, 'close')
         res['ma20'] = self.get_series('ma', 20, 'close')
+        self._cache[idf] = res
         return res
 
 
