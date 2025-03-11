@@ -226,7 +226,7 @@ def get_stock_list(fs):
     url = 'http://{}.push2.eastmoney.com/api/qt/clist/get?pn={}&pz={}&po=1&np=1&fltt=2&invt=2&fid=f3&{}&fields=f12,f13,f14'
     session = requests.Session()
     s = 1
-    p = 200
+    p = 20
     n = random.randint(1, 99)
     res = session.get(url.format(n, s, p, fs), headers={'User-Agent': ua, 'host': f'{n}.push2.eastmoney.com'})
     lis = []
