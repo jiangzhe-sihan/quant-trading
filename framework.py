@@ -278,6 +278,10 @@ class KLine:
             return self._cache[idf]
         li = []
         ptr = self
+        li.append((ptr.date, ptr.ref(0, func, *args, **kw)))
+        if idf in self._cache:
+            return self._cache[idf]
+        ptr = ptr.previous
         while ptr is not None:
             li.insert(0, (ptr.date, ptr.ref(0, func, *args, **kw)))
             ptr = ptr.previous
@@ -1047,7 +1051,7 @@ class Investor:
         for i in range(1, len(self._gp_irt)):
             invr = self._gp_irt[i]
             close = kl.get_future_value(i, self._price_sell)
-            incr = close / price - 1
+            incr = close / price - 1 if price else 0
             invr.update_incr(incr)
             down = kl.future_min(i, 'low')
             invr.update_down(down)
