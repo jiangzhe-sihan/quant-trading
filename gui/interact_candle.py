@@ -13,14 +13,14 @@ title_font = {
 }
 large_red_font = {
     'fontname': 'Arial',
-    'size': '24',
+    'size': '20',
     'color': 'red',
     'weight': 'bold',
     'va': 'bottom',
 }
 large_green_font = {
     'fontname': 'Arial',
-    'size': '24',
+    'size': '20',
     'color': 'green',
     'weight': 'bold',
     'va': 'bottom',
