@@ -63,20 +63,24 @@ normal_font_left = {
 
 
 class InterCandle:  # 定义一个交互K线图类
-    def __init__(self, data: pandas.DataFrame, my_style, symbol, signal, ctime):
+    def __init__(self, data: pandas.DataFrame, my_style, symbol, signal, ctime, adp, parent):
         # 初始化交互式K线图对象，历史数据作为唯一的参数用于初始化对象
-        self.data = data
+        self.data = data.join(adp)
+        self.symbol = symbol
         self.style = my_style
         self._signal = signal
         self._insert_signal()
+        self.adp = adp
+        self._parent = parent
         # 设置初始化的K线图显示区间起点为0，即显示第0到第99个交易日的数据（前100个数据）
-        idx = self.data.index.get_loc(ctime)
+        idx = self.data.index.get_loc(ctime) if ctime in self.data.index else 0
         self.idx_start = idx if idx > 30 else 30 if len(data) >= 30 else len(data) - 1
         # 控制K线图的显示范围大小
         self.idx_range = 100 if self.idx_start >= 100 else self.idx_start
         self._min_range = 30 if self.idx_range > 30 else self.idx_range
         # 鼠标按键状态，False为按键未按下，True为按键按下
         self.pressed = False
+        self.locked = False
         # 鼠标按下时的x坐标
         self.xpress = None
         # 相对移动距离
@@ -88,6 +92,11 @@ class InterCandle:  # 定义一个交互K线图类
         fig = self._fig
         self._ax_price = fig.add_axes([0.08, 0.25, 0.88, 0.6])
         self._ax_volume = fig.add_axes([0.08, 0.10, 0.88, 0.15], sharex=self._ax_price)
+        self._hline = None
+        self._vline = None
+        self._vline1 = None
+        self._text_price = None
+        self._xp = 0
         # 初始化figure对象，在figure上预先放置文本并设置格式，文本内容根据需要显示的数据实时更新
         # 初始化时，所有的价格数据都显示为空字符串
         self._tx_title = fig.text(0.50, 0.94, symbol, **title_font)
@@ -96,18 +105,20 @@ class InterCandle:  # 定义一个交互K线图类
         self._tx_change = fig.text(0.14, 0.86, '', **small_red_font)
         self._tx_pct_change = fig.text(0.22, 0.86, '', **small_red_font)
         self._tx_date = fig.text(0.12, 0.86, '', **normal_label_font)
-        self._tx_high_label = fig.text(0.45, 0.90, '高: ', **normal_label_font)
-        self._tx_high_value = fig.text(0.45, 0.90, '', **small_red_font)
-        self._tx_low_label = fig.text(0.45, 0.86, '低: ', **normal_label_font)
-        self._tx_low_value = fig.text(0.45, 0.86, '', **small_green_font)
-        self._tx_volume_label = fig.text(0.60, 0.90, '量: ', **normal_label_font)
-        self._tx_volume_value = fig.text(0.60, 0.90, '', **normal_font_left)
-        self._tx_last_close_label = fig.text(0.60, 0.86, '昨收: ', **normal_label_font)
-        self._tx_last_close_value = fig.text(0.65, 0.86, '', **normal_font)
-        self._tx_amount_label = fig.text(0.75, 0.90, '额: ', **normal_label_font)
-        self._tx_amount_value = fig.text(0.75, 0.90, '', **normal_font_left)
-        self._tx_hs_label = fig.text(0.75, 0.86, '换手: ', **normal_label_font)
-        self._tx_hs_value = fig.text(0.80, 0.86, '', **normal_font)
+        self._tx_high_label = fig.text(0.40, 0.90, '高: ', **normal_label_font)
+        self._tx_high_value = fig.text(0.40, 0.90, '', **small_red_font)
+        self._tx_low_label = fig.text(0.40, 0.86, '低: ', **normal_label_font)
+        self._tx_low_value = fig.text(0.40, 0.86, '', **small_green_font)
+        self._tx_volume_label = fig.text(0.55, 0.90, '量: ', **normal_label_font)
+        self._tx_volume_value = fig.text(0.55, 0.90, '', **normal_font_left)
+        self._tx_last_close_label = fig.text(0.55, 0.86, '昨收: ', **normal_label_font)
+        self._tx_last_close_value = fig.text(0.55, 0.86, '', **normal_font_left)
+        self._tx_amount_label = fig.text(0.70, 0.90, '额: ', **normal_label_font)
+        self._tx_amount_value = fig.text(0.70, 0.90, '', **normal_font_left)
+        self._tx_hs_label = fig.text(0.70, 0.86, '换手: ', **normal_label_font)
+        self._tx_hs_value = fig.text(0.70, 0.86, '', **normal_font_left)
+        self._tx_lz_label = fig.text(0.85, 0.90, '流值: ', **normal_label_font)
+        self._tx_lz_value = fig.text(0.85, 0.90, '', **normal_font_left)
         # 添加十字光标
         self._cursor = MultiCursor(self._fig.canvas,
                                    [self._ax_price, self._ax_volume],
@@ -122,7 +133,7 @@ class InterCandle:  # 定义一个交互K线图类
         self._fig.canvas.mpl_connect('scroll_event', self.on_scroll)
         # 绑定关闭函数
         self._fig.canvas.mpl_connect('close_event', self.close)
-        self.refresh_plot()
+        # self.refresh_plot()
         self._ax_price.clear()
         self._ax_volume.clear()
         self.refresh_texts(self.data.iloc[self.idx_start])
@@ -143,13 +154,14 @@ class InterCandle:  # 定义一个交互K线图类
     def refresh_plot(self, idx_start=None, idx_range=None):
         """ 根据最新的参数，重新绘制整个图表
         """
+        self._hline = self._vline = self._vline1 = self._text_price = None
         if idx_start is None:
             idx_start = self.idx_start
         if idx_range is None:
             idx_range = self.idx_range
         plot_data = self.data.iloc[idx_start - idx_range:idx_start + 1]
         if idx_range < 200:
-            ap = [mpf.make_addplot(plot_data[['ma5', 'ma10', 'ma20']], ax=self._ax_price, width=1)]
+            ap = [mpf.make_addplot(plot_data[self.adp.columns], ax=self._ax_price, width=1)]
             if self._signal is not None:
                 ap.append(
                     mpf.make_addplot(
@@ -174,7 +186,7 @@ class InterCandle:  # 定义一个交互K线图类
                         plot_data['t'],
                         ax=self._ax_price,
                         scatter=True,
-                        marker='o',
+                        marker='*',
                         color='y'
                     )
                 )
@@ -199,6 +211,14 @@ class InterCandle:  # 定义一个交互K线图类
         if not self._closed:
             self._fig.show()
 
+    @staticmethod
+    def _format_num(num):
+        if num // 100000000:
+            num = f'{num / 100000000:.2f}亿'
+        elif num // 10000:
+            num = f'{num / 10000:.2f}万'
+        return num
+
     def refresh_texts(self, display_data):
         """ 更新K线图上的价格文本
         """
@@ -212,12 +232,10 @@ class InterCandle:  # 定义一个交互K线图类
         self._tx_volume_value.set_text(f'{display_data["volume"]:.0f}')
         self._tx_last_close_value.set_text(f'{display_data["last_close"]}')
         amount = display_data["amount"]
-        if amount // 100000000:
-            amount = f'{amount / 100000000:.2f}亿'
-        elif amount // 10000:
-            amount = f'{amount / 10000:.2f}万'
-        self._tx_amount_value.set_text(f'{amount}')
+        self._tx_amount_value.set_text(f'{self._format_num(amount)}')
         self._tx_hs_value.set_text(f'{display_data["hs"]}')
+        lz = display_data["lz"]
+        self._tx_lz_value.set_text(f'{self._format_num(lz)}')
         # 根据本交易日的价格变动值确定开盘价、收盘价的显示颜色
         if display_data['change'] > 0:  # 如果今日变动额大于0，即今天价格高于昨天，今天价格显示为绿色
             close_number_color = 'green'
@@ -229,6 +247,35 @@ class InterCandle:  # 定义一个交互K线图类
         self._tx_change.set_color(close_number_color)
         self._tx_pct_change.set_color(close_number_color)
 
+    def _get_cur_idx(self, xp):
+        if xp < 0:
+            xp = 0
+        elif xp > self.idx_range:
+            xp = self.idx_range
+        idx = self.idx_start - self.idx_range + xp
+        return xp, idx
+
+    def _arm_to_pos(self, x):
+        x, idx = self._get_cur_idx(x)
+        y = self.data.iloc[idx]['close']
+        price_pos = self.idx_range + 1
+        if self._vline is None:
+            self._vline = self._ax_price.axvline(x, color='gray', lw=1)
+            self._vline1 = self._ax_volume.axvline(x, color='gray', lw=1)
+        else:
+            self._vline.set_xdata([x])
+            self._vline1.set_xdata([x])
+        if self._hline is None:
+            self._hline = self._ax_price.axhline(y, color='gray', lw=1)
+        else:
+            self._hline.set_ydata([y])
+        if self._text_price is None:
+            self._text_price = self._ax_price.text(price_pos, y, f'{y}', backgroundcolor='lightgray')
+        else:
+            self._text_price.set_position((price_pos, y))
+            self._text_price.set_text(f'{y}')
+        self.refresh_texts(self.data.iloc[idx])
+
     def on_press(self, event):
         # 当鼠标按键按下时，调用该函数，event为事件信息，是一个dict对象，包含事件相关的信息
         # 如坐标、按键类型、是否在某个Axes对象内等等
@@ -236,19 +283,43 @@ class InterCandle:  # 定义一个交互K线图类
         # 标在ax1内时，才能平移K线图，否则就退出事件处理函数
         if not event.inaxes == self._ax_price:
             return
-        # 检查是否按下了鼠标左键，如果不是左键，同样退出事件处理函数
-        if event.button != 1:
-            return
-        # 如果鼠标在ax1范围内，且按下了左键，条件满足，设置鼠标状态为pressed
-        self.pressed = True
-        # 同时记录鼠标按下时的x坐标，退出函数，等待鼠标移动事件发生
+        # 记录鼠标按下时的x坐标
         self.xpress = event.xdata
-        self._cursor.disconnect()
+        # 检查是否按下了鼠标左键，如果不是左键，同样退出事件处理函数
+        if event.button == 1:
+            if self.locked:
+                if event.dblclick:
+                    self._parent.show_evaluate(
+                        self.symbol,
+                        self._parent.market.get_quotes(self.data.index[self._get_cur_idx(self._xp)[1]]),
+                        self._fig.canvas.get_tk_widget().winfo_toplevel()
+                    )
+                return
+            # 如果鼠标在ax1范围内，且按下了左键，条件满足，设置鼠标状态为pressed
+            self.pressed = True
+            # 退出函数，等待鼠标移动事件发生
+            self._cursor.disconnect()
+        elif event.button == 3:
+            if self.pressed:
+                return
+            if self.locked:
+                self._cursor.connect()
+                self._update_idx()
+                self._update_axes()
+            else:
+                self._cursor.disconnect()
+                self._xp = int(round(self.xpress))
+                self._arm_to_pos(self._xp)
+            self._fig.canvas.draw_idle()
+            self._fig.canvas.flush_events()
+            self.locked = not self.locked
 
     # 鼠标移动事件处理
     def on_motion(self, event):
         # 如果鼠标按键没有按下pressed == False，则什么都不做，退出处理函数
         if not self.pressed:
+            return
+        if self.locked:
             return
         # 如果移动出了ax1的范围，也退出处理函数
         if not event.inaxes == self._ax_price:
@@ -276,9 +347,14 @@ class InterCandle:  # 定义一个交互K线图类
 
     # 鼠标按键释放
     def on_release(self, event):
+        if self.locked:
+            return
         # 按键释放后，设置鼠标的pressed为False
+        if event.button != 1:
+            return
         self.pressed = False
         self.idx_start -= self._dx
+        self._dx = 0
         self._update_idx()
         self._update_axes()
         self._cursor.connect()
@@ -290,15 +366,37 @@ class InterCandle:  # 定义一个交互K线图类
         if self.idx_start - self.idx_range < 0:
             self.idx_start = self.idx_range
 
-    def _update_axes(self):
+    def _update_axes(self, with_text=True):
         # 清除各个图表Axes中的内容，准备以新的起点重新绘制
         self._ax_price.clear()
         self._ax_volume.clear()
         # 更新图表上的文字、以新的起点开始绘制K线图
-        self.refresh_texts(self.data.iloc[self.idx_start])
+        if with_text:
+            self.refresh_texts(self.data.iloc[self.idx_start])
         self.refresh_plot()
 
     def on_scroll(self, event):
+        if self.locked:
+            if event.button == 'up':
+                self._xp -= 1
+                if self._xp < 0:
+                    self._xp = 0
+                    self.idx_start -= 1
+                    self._update_idx()
+                    self._update_axes(False)
+            elif event.button == 'down':
+                self._xp += 1
+                if self._xp > self.idx_range:
+                    self._xp = self.idx_range
+                    self.idx_start += 1
+                    self._update_idx()
+                    self._update_axes(False)
+            else:
+                return
+            self._arm_to_pos(self._xp)
+            self._fig.canvas.draw_idle()
+            self._fig.canvas.flush_events()
+            return
         # 仅当鼠标滚轮在axes1范围内滚动时起作用
         if event.inaxes != self._ax_price:
             return

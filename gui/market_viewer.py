@@ -64,7 +64,7 @@ class MarketViewer(ttk.Frame):
         info = self._market.get_quotes(date)
         self._current_date = date
         self._market.set_time(date)
-        self._lsb_symbol.set_info(info, self._player)
+        self._lsb_symbol.set_info(info, self._player, self._market)
         self._str_date.set('{}-{}-{}'.format(*self._de_date.get()))
         self._lsb_symbol.delete('0', 'end')
         self._lsb_symbol.insert('end', *info.keys())

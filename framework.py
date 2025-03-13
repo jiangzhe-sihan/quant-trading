@@ -193,7 +193,10 @@ class KLine:
     @property
     def market_value(self):
         """市值"""
-        return 100 * self.volume * self.close / self.hs
+        res = 100 * self.volume * self.close / np.float32(self.hs)
+        if self.code.startswith('s'):
+            res *= 100
+        return res
 
     @property
     def lb(self):
@@ -209,8 +212,9 @@ class KLine:
         if isinstance(func, pd.Series):
             if interval == 0:
                 interval = func.index.get_loc(self.date) + 1
-            idf = f'cnt_{id(func)}_{interval}'
-            return self._load_cache(idf, func.rolling(interval, 1).sum)
+            # idf = f'cnt_{id(func)}_{interval}'
+            # return self._load_cache(idf, func.rolling(interval, 1).sum)
+            return func.rolling(interval, 1).sum()
         if interval == 0:
             interval = self.get_series(func).index.get_loc(self.date) + 1
         idf = f'cnt_{self.code}_{func.__code__.co_linetable.hex()}_{interval}'
@@ -219,8 +223,9 @@ class KLine:
     def ma(self, cycle: int, func: str | FunctionType | pd.Series, *args, **kw):
         """移动均线"""
         if isinstance(func, pd.Series):
-            idf = f'ma_{id(func)}_{cycle}'
-            return self._load_cache(idf, func.rolling(cycle, 1).mean)
+            # idf = f'ma_{id(func)}_{cycle}'
+            # return self._load_cache(idf, func.rolling(cycle, 1).mean)
+            return func.rolling(cycle, 1).mean()
         idf = f'ma_{self.code}_{cycle}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).rolling(cycle, 1).mean())[self.date]
 
@@ -238,7 +243,8 @@ class KLine:
     def get_history_value(self, span: int, func: str | FunctionType | pd.Series, *args, **kw):
         """获取历史属性值"""
         if isinstance(func, pd.Series):
-            return self._load_cache(f'ref_{id(func)}_{span}', lambda: func.shift(span))
+            # return self._load_cache(f'ref_{id(func)}_{span}', lambda: func.shift(span, fill_value=func.iloc[0]))
+            return func.shift(span, fill_value=func.iloc[0])
         if span == 0:
             return self._get_value(self, func, *args, **kw)
         ln = self.get_series(func, *args, **kw)
@@ -253,8 +259,9 @@ class KLine:
     def interval_max(self, span: int, func: str | FunctionType | pd.Series, *args, **kw):
         """获取属性的区间最大值"""
         if isinstance(func, pd.Series):
-            idf = f'hhv_{id(func)}_{span}'
-            return self._load_cache(idf, func.rolling(span, 1).max)
+            # idf = f'hhv_{id(func)}_{span}'
+            # return self._load_cache(idf, func.rolling(span, 1).max)
+            return func.rolling(span, 1).max()
         idf = f'hhv_{self.code}_{span}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).rolling(span, 1).max())[self.date]
 
@@ -264,8 +271,9 @@ class KLine:
     def interval_min(self, span: int, func: str | FunctionType | pd.Series, *args, **kw):
         """获取属性的区间最小值"""
         if isinstance(func, pd.Series):
-            idf = f'llv_{id(func)}_{span}'
-            return self._load_cache(idf, func.rolling(span, 1).min)
+            # idf = f'llv_{id(func)}_{span}'
+            # return self._load_cache(idf, func.rolling(span, 1).min)
+            return func.rolling(span, 1).min()
         idf = f'llv_{self.code}_{span}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).rolling(span, 1).min())[self.date]
 
@@ -328,18 +336,58 @@ class KLine:
     def ema(self, n: int, func: str | FunctionType | pd.Series, *args, **kw):
         """指数移动平均"""
         if isinstance(func, pd.Series):
-            idf = f'ema_{id(func)}_{n}'
-            return self._load_cache(idf, func.ewm(span=n, adjust=False).mean)
+            # idf = f'ema_{id(func)}_{n}'
+            # return self._load_cache(idf, func.ewm(span=n, adjust=False).mean)
+            return func.ewm(span=n, adjust=False).mean()
         idf = f'ema_{self.code}_{n}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).ewm(span=n, adjust=False).mean())[self.date]
 
     def sma(self, n: int, m: int, func: str | FunctionType | pd.Series, *args, **kw):
         """加权移动平均"""
         if isinstance(func, pd.Series):
-            idf = f'sma_{id(func)}_{n}_{m}'
-            return self._load_cache(idf, func.ewm(com=n-m).mean)
+            # idf = f'sma_{id(func)}_{n}_{m}'
+            # return self._load_cache(idf, func.ewm(com=n-m).mean)
+            return func.ewm(com=n-m).mean()
         idf = f'sma_{self.code}_{n}_{m}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).ewm(com=n - m).mean())[self.date]
+
+    @staticmethod
+    def max(a, b):
+        """返回较大值"""
+        if isinstance(a, pd.Series) and isinstance(b, pd.Series):
+            return a.where(a > b, b)
+        if isinstance(a, pd.Series) and isinstance(b, (int, float, np.integer, np.floating)):
+            return a.where(a > b, b)
+        if isinstance(a, (int, float, np.integer, np.floating)) and isinstance(b, pd.Series):
+            return b.where(b > a, a)
+        return max(a, b)
+
+    @staticmethod
+    def min(a, b):
+        """返回较小值"""
+        if isinstance(a, pd.Series) and isinstance(b, pd.Series):
+            return a.where(a < b, b)
+        if isinstance(a, pd.Series) and isinstance(b, (int, float, np.integer, np.floating)):
+            return a.where(a < b, b)
+        if isinstance(a, (int, float, np.integer, np.floating)) and isinstance(b, pd.Series):
+            return b.where(b < a, a)
+        return min(a, b)
+
+    def between(self, item, a, b):
+        """判断值是否介于两个数之间"""
+        c1 = item > self.min(a, b)
+        c2 = item < self.max(a, b)
+        if isinstance(c1, pd.Series):
+            return c1 & c2
+        return c1 and c2
+
+    def cross(self, a, b):
+        """判断数值a是否上穿数值b"""
+        c1 = self.ref(1, a) < self.ref(1, b)
+        c2 = a > b
+        if isinstance(c1, pd.Series):
+            return c1 & c2
+        return c1 and c2
 
     def rsi(self, n: int):
         """计算rsi指标值"""
@@ -347,7 +395,7 @@ class KLine:
         if idf in self._cache:
             return self._cache[idf][self.date]
         dif = self.get_series('close') - self.ref(1, self.get_series('close'))
-        res = self.sma(n, 1, np.maximum(dif, 0)) / self.sma(n, 1, abs(dif))
+        res = self.sma(n, 1, self.max(dif, 0)) / self.sma(n, 1, abs(dif))
         self._cache[idf] = res
         return res[self.date]
 
@@ -406,8 +454,9 @@ class KLine:
     def avedev(self, n: int, func: str | FunctionType | pd.Series, *args, **kw):
         """计算平均绝对偏差"""
         if isinstance(func, pd.Series):
-            idf = f'avedev_{id(func)}_{n}'
-            return self._load_cache(idf, lambda: func.rolling(n, 1).apply(lambda x: (x - x.mean()).abs().mean()))
+            # idf = f'avedev_{id(func)}_{n}'
+            # return self._load_cache(idf, lambda: func.rolling(n, 1).apply(lambda x: (x - x.mean()).abs().mean()))
+            return func.rolling(n, 1).apply(lambda x: (x - x.mean()).abs().mean())
         idf = f'avedev_{self.code}_{n}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).rolling(n, 1).apply(lambda x: (x - x.mean()).abs().mean()))
 
@@ -430,7 +479,7 @@ class KLine:
     def _get_value(ptr: KLine, func: str | FunctionType, *args, **kw):
         if isinstance(func, str):
             val = ptr.__getattribute__(func)
-            if isinstance(val, (int, float)):
+            if isinstance(val, (int, float, np.floating, np.integer)):
                 return val
             return val(*args, **kw)
         return func(ptr)
@@ -529,11 +578,12 @@ class KLine:
         res['last_close'] = self.get_series('last_close')
         res['amount'] = self.get_series('amount')
         res['hs'] = self.get_series('hs')
-        res['ma5'] = self.get_series('ma', 5, 'close')
-        res['ma10'] = self.get_series('ma', 10, 'close')
-        res['ma20'] = self.get_series('ma', 20, 'close')
-        self._cache[idf] = res
-        return res
+        res['lz'] = self.get_series('market_value')
+        adp = pd.DataFrame()
+        adp['ma20'] = self.get_series('ma', 20, 'close')
+        adp['ma60'] = self.get_series('ma', 60, 'close')
+        self._cache[idf] = res, adp
+        return res, adp
 
 
 class MarketSlice:
