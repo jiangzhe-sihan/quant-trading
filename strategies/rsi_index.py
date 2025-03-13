@@ -1,6 +1,10 @@
 # NAME=rsi指标
 # DESCRIPTION=参考rsi指标进行决策
 
+prop = [
+    ('high', lambda x: x.high)
+]
+
 def func(self):
     for k, v in self.market.tell.items():
         r1, r2, r3 = v.rsi_group()

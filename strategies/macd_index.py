@@ -3,7 +3,7 @@
 
 
 prop = [
-    ('macd', lambda x: x.macd())
+    ('macd', lambda x: x.ref(1, 'macd'))
 ]
 
 

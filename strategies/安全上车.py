@@ -4,7 +4,8 @@
 
 prop = [
     ('倍量', lambda x: x.volume / x.ref(1, 'volume')),
-    ('市值', lambda x: x.market_value)
+    ('市值', lambda x: x.market_value),
+    ('lwr', lambda x: x.lwr())
 ]
 
 
