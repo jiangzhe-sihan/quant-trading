@@ -9,6 +9,7 @@ import json
 import pandas as pd
 import numpy as np
 import datetime
+from numba import njit
 
 from vector import Vector
 
@@ -451,14 +452,30 @@ class KLine:
         self._cache[idf] = dif, dea, macd
         return dif[self.date], dea[self.date], macd[self.date]
 
+    @staticmethod
+    @njit
+    def _rolling_mad(arr, window_size):
+        n = len(arr)
+        mad = np.empty(n)
+        for i in range(n):
+            start = max(0, i - window_size + 1)
+            window = arr[start:i + 1]
+            mean = window.mean()
+            abs_sum = 0.0
+            for val in window:
+                abs_sum += np.abs(val - mean)
+            mad[i] = abs_sum / len(window) if len(window) > 0 else np.nan
+        return mad
+
     def avedev(self, n: int, func: str | FunctionType | pd.Series, *args, **kw):
         """计算平均绝对偏差"""
         if isinstance(func, pd.Series):
             # idf = f'avedev_{id(func)}_{n}'
             # return self._load_cache(idf, lambda: func.rolling(n, 1).apply(lambda x: (x - x.mean()).abs().mean()))
-            return func.rolling(n, 1).apply(lambda x: (x - x.mean()).abs().mean())
+            return pd.Series(self._rolling_mad(func.values, n), index=func.index)
         idf = f'avedev_{self.code}_{n}_{func}_{args}_{kw}'
-        return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).rolling(n, 1).apply(lambda x: (x - x.mean()).abs().mean()))
+        func = self.get_series(func, *args, **kw)
+        return self._load_cache(idf, lambda: pd.Series(self._rolling_mad(func.values, n), index=func.index))[self.date]
 
     def cci(self, n: int = 14):
         """计算cci指标"""
@@ -1000,6 +1017,11 @@ class Investor:
     def static(self):
         """静态变量的获取方法"""
         return self._static
+
+    @property
+    def warehouse(self):
+        """获取持仓信息"""
+        return self._warehouse
 
     def set_price_buy(self, buy: str):
         """设置买入价（open、high、low、close）"""
