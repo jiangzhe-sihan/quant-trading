@@ -37,6 +37,7 @@ pip install pandas
 pip install matplotlib
 pip install mplfinance
 pip install pypinyin
+pip install numba
 ```
 - 启动程序
 
