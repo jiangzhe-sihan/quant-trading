@@ -40,9 +40,7 @@ def func(self):
             o = v.get_series('open')
             start = (em1 > v.ref(1, em1)) & v.between(em1, o, close)
             upup = 100 * v.count(inc > 0, m) / m > 49
-            ma20 = v.ma(20, close)
-            ma60 = v.ma(60, close)
-            condition = vegas & ~vegas & power_up & cci_con & start & upup & (ma20 > ma60)
+            condition = vegas & ~v.ref(1, vegas) & power_up & cci_con & start & upup
             self.static[v.code] = condition
         if self.static[v.code][v.date] and v.amount > 50000000 and v.close > 50:
             self.li_buy.add(k)
