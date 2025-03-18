@@ -1,11 +1,10 @@
-# NAME=顺势而为
+# NAME=新弱转强
 # DESCRIPTION=
 
 
 prop = [
     # ('index_name', lambda x: x.func())
-    ('up', lambda x: x.count(lambda v: v.close > v.ref(1, 'close') and v.volume > v.ref(1, 'volume'), 20) / x.count(lambda v: v.close > v.ref(1, 'close'), 20)),
-    ('down', lambda x: x.count(lambda v: v.close <= v.ref(1, 'close') and v.volume < v.ref(1, 'volume'), 20) / x.count(lambda v: v.close <= v.ref(1, 'close'), 20))
+    ('cci', lambda x: x.cci())
 ]
 
 
@@ -23,9 +22,12 @@ def func(self):
             inc = c - v.ref(1, c)
             up = v.count((inc > 0) & (vol > v.ref(1, vol)), n) / v.count(inc > 0, n)
             down = v.count((inc <= 0) & (vol < v.ref(1, vol)), n) / v.count(inc <= 0, n)
-            rsi6 = v.get_series('rsi', 6)
-            ma20 = v.ma(20, c)
-            ma60 = v.ma(60, c)
-            self.static[v.code] = (up + down > 1) & (v.min(up, down) > .6) & (rsi6 < .2) & (ma20 > ma60)
-        if self.static[v.code][v.date] and v.amount > 50000000 and v.close > 50:
+            power = up + down
+            pwm1 = v.ema(3, power)
+            pwm2 = v.ema(14, power)
+            h = v.get_series('high')
+            zt = c >= v.zt_price(v.ref(1, c), .1)
+            cci = v.get_series('cci')
+            self.static[v.code] = (v.cross(pwm1, pwm2) | v.cross(pwm2, pwm1)) & (h != v.hhv(7, h)) & (v.count(zt, 7) > 0) & (cci > v.ref(1, cci))
+        if self.static[v.code][v.date] and v.amount > 50000000:
             self.li_buy.add(k)
