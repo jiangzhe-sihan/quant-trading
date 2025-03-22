@@ -218,7 +218,7 @@ class KLine:
             return func.rolling(interval, 1).sum()
         if interval == 0:
             interval = self.get_series(func).index.get_loc(self.date) + 1
-        idf = f'cnt_{self.code}_{func.__code__.co_linetable.hex()}_{interval}'
+        idf = f'cnt_{func.__code__.co_linetable.hex()}_{interval}'
         return self._load_cache(idf, lambda: self.get_series(func).rolling(interval, 1).sum())[self.date]
 
     def ma(self, cycle: int, func: str | FunctionType | pd.Series, *args, **kw):
@@ -227,7 +227,7 @@ class KLine:
             # idf = f'ma_{id(func)}_{cycle}'
             # return self._load_cache(idf, func.rolling(cycle, 1).mean)
             return func.rolling(cycle, 1).mean()
-        idf = f'ma_{self.code}_{cycle}_{func}_{args}_{kw}'
+        idf = f'ma_{cycle}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).rolling(cycle, 1).mean())[self.date]
 
     def ndup(self, n: int):
@@ -263,7 +263,7 @@ class KLine:
             # idf = f'hhv_{id(func)}_{span}'
             # return self._load_cache(idf, func.rolling(span, 1).max)
             return func.rolling(span, 1).max()
-        idf = f'hhv_{self.code}_{span}_{func}_{args}_{kw}'
+        idf = f'hhv_{span}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).rolling(span, 1).max())[self.date]
 
     def llv(self, span: int, func: str | FunctionType | pd.Series, *args, **kw):
@@ -275,14 +275,14 @@ class KLine:
             # idf = f'llv_{id(func)}_{span}'
             # return self._load_cache(idf, func.rolling(span, 1).min)
             return func.rolling(span, 1).min()
-        idf = f'llv_{self.code}_{span}_{func}_{args}_{kw}'
+        idf = f'llv_{span}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).rolling(span, 1).min())[self.date]
 
     def get_series(self, func: str | FunctionType, *args, **kw):
         if isinstance(func, str):
-            idf = self.get_idf(func, self.code, *args, **kw)
+            idf = self.get_idf(func, *args, **kw)
         else:
-            idf = f'ln_{self.code}_{func.__code__.co_linetable.hex()}_{args}_{kw}'
+            idf = f'ln_{func.__code__.co_linetable.hex()}_{args}_{kw}'
         if idf in self._cache:
             return self._cache[idf]
         li = []
@@ -304,34 +304,34 @@ class KLine:
         return df
 
     @staticmethod
-    def get_idf(func, code, *args, **kw):
+    def get_idf(func, *args, **kw):
         match func:
             case 'ma':
                 n, _func = args[:2]
-                idf = f'ma_{code}_{n}_{_func}_{args[2:]}_{kw}'
+                idf = f'ma_{n}_{_func}_{args[2:]}_{kw}'
             case 'ema':
                 n, _func = args[:2]
-                idf = f'ema_{code}_{n}_{_func}_{args[2:]}_{kw}'
+                idf = f'ema_{n}_{_func}_{args[2:]}_{kw}'
             case 'sma':
                 n, m, _func = args[:3]
-                idf = f'sma_{code}_{n}_{m}_{_func}_{args[3:]}_{kw}'
+                idf = f'sma_{n}_{m}_{_func}_{args[3:]}_{kw}'
             case 'hhv':
                 span, _func = args[:2]
-                idf = f'hhv_{code}_{span}_{_func}_{args[2:]}_{kw}'
+                idf = f'hhv_{span}_{_func}_{args[2:]}_{kw}'
             case 'llv':
                 span, _func = args[:2]
-                idf = f'llv_{code}_{span}_{_func}_{args[2:]}_{kw}'
+                idf = f'llv_{span}_{_func}_{args[2:]}_{kw}'
             case 'rsi':
                 n = args[:1]
-                idf = f'rsi_{code}_{n}'
+                idf = f'rsi_{n}'
             case 'avedev':
                 n, _func = args[:2]
-                idf = f'avedev_{code}_{n}_{_func}_{args[2:]}_{kw}'
+                idf = f'avedev_{n}_{_func}_{args[2:]}_{kw}'
             case 'cci':
                 n = args[:1] if args else 14
-                idf = f'cci_{code}_{n}'
+                idf = f'cci_{n}'
             case default:
-                idf = f'ln_{code}_{func}_{args}_{kw}'
+                idf = f'ln_{func}_{args}_{kw}'
         return idf
 
     def ema(self, n: int, func: str | FunctionType | pd.Series, *args, **kw):
@@ -340,7 +340,7 @@ class KLine:
             # idf = f'ema_{id(func)}_{n}'
             # return self._load_cache(idf, func.ewm(span=n, adjust=False).mean)
             return func.ewm(span=n, adjust=False).mean()
-        idf = f'ema_{self.code}_{n}_{func}_{args}_{kw}'
+        idf = f'ema_{n}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).ewm(span=n, adjust=False).mean())[self.date]
 
     def sma(self, n: int, m: int, func: str | FunctionType | pd.Series, *args, **kw):
@@ -349,7 +349,7 @@ class KLine:
             # idf = f'sma_{id(func)}_{n}_{m}'
             # return self._load_cache(idf, func.ewm(com=n-m).mean)
             return func.ewm(com=n-m).mean()
-        idf = f'sma_{self.code}_{n}_{m}_{func}_{args}_{kw}'
+        idf = f'sma_{n}_{m}_{func}_{args}_{kw}'
         return self._load_cache(idf, lambda: self.get_series(func, *args, **kw).ewm(com=n - m).mean())[self.date]
 
     @staticmethod
@@ -392,7 +392,7 @@ class KLine:
 
     def rsi(self, n: int):
         """计算rsi指标值"""
-        idf = f'rsi_{self.code}_{n}'
+        idf = f'rsi_{n}'
         if idf in self._cache:
             return self._cache[idf][self.date]
         dif = self.get_series('close') - self.ref(1, self.get_series('close'))
@@ -430,7 +430,7 @@ class KLine:
 
     def lwr(self, n: int = 9, m1: int = 3, m2: int = 3):
         """计算lwr指标值"""
-        idf = f'lwr_{self.code}_{n}_{m1}_{m2}'
+        idf = f'lwr_{n}_{m1}_{m2}'
         if idf in self._cache:
             res = self._cache[idf]
             return res[0][self.date], res[1][self.date]
@@ -442,7 +442,7 @@ class KLine:
 
     def macd(self, short: int = 12, long: int = 26, m: int = 9):
         """计算macd指标"""
-        idf = f'macd_{self.code}_{short}_{long}_{m}'
+        idf = f'macd_{short}_{long}_{m}'
         if idf in self._cache:
             res = self._cache[idf]
             return res[0][self.date], res[1][self.date], res[2][self.date]
@@ -473,13 +473,13 @@ class KLine:
             # idf = f'avedev_{id(func)}_{n}'
             # return self._load_cache(idf, lambda: func.rolling(n, 1).apply(lambda x: (x - x.mean()).abs().mean()))
             return pd.Series(self._rolling_mad(func.values, n), index=func.index)
-        idf = f'avedev_{self.code}_{n}_{func}_{args}_{kw}'
+        idf = f'avedev_{n}_{func}_{args}_{kw}'
         func = self.get_series(func, *args, **kw)
         return self._load_cache(idf, lambda: pd.Series(self._rolling_mad(func.values, n), index=func.index))[self.date]
 
     def cci(self, n: int = 14):
         """计算cci指标"""
-        idf = f'cci_{self.code}_{n}'
+        idf = f'cci_{n}'
         res = self._load_cache(idf)
         if res is not None:
             return res[self.date]
@@ -581,7 +581,7 @@ class KLine:
 
     def candle(self):
         """返回绘制蜡烛图使用的数据"""
-        idf = f'candle_{self.code}'
+        idf = f'candle'
         if idf in self._cache:
             return self._cache[idf]
         res = pd.DataFrame()
@@ -678,7 +678,7 @@ class Market:
         self._quotes: dict[datetime.datetime, dict[str, KLine]] = {}  # 记录行情
         self.len: int = 200  # 标的数量
         self._slices = ()  # 多线程切片
-        self._cache = {}  # 统计数据缓存
+        self._cache: list[dict] = []  # 统计数据缓存
 
     def load(self, src: str | dict[str, list[dict[str, str | int | float]]],
              prop: list[tuple[str, FunctionType]] = None, callback: FunctionType = None):
@@ -710,6 +710,7 @@ class Market:
         """从爬虫返回的对象加载股票数据"""
         # 先清空哈希表
         self._data.clear()
+        self._cache.clear()
         # 加载数据
         hash_value = 0
         n = ceil(get_max_cpu_count() * .5)
@@ -725,6 +726,8 @@ class Market:
                 _hash.clear()
             # 数据处理
             last = None
+            cache = {}
+            self._cache.append(cache)
             for data_day in data:
                 # 删除date属性前记录
                 date = data_day.pop('date')
@@ -746,7 +749,7 @@ class Market:
                 # 以日期作为索引存储标的日k
                 if date not in self._data:
                     self._data[date] = np.full(len(obj), None)
-                kline = KLine(index, date, data_day, self._cache)
+                kline = KLine(index, date, data_day, cache)
                 if last is not None:
                     last.insert(kline)
                 self._data[date][hash_value] = kline
@@ -873,7 +876,8 @@ class Market:
         """重开（回到开始日期）"""
         if self.date_handler.get_inter() != self.stime:
             self.date_handler.set_time(self.stime)
-        self._cache.clear()
+        for c in self._cache:
+            c.clear()
         self._flush_index()
 
     def __len__(self):
