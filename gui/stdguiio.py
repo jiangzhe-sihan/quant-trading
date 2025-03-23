@@ -17,7 +17,7 @@ class StdGuiIO(tk.Text):
         self.insert('end', string)
         self.config(state='disabled')
         self.yview_moveto(1.0)
-        self.update()
+        self.update_idletasks()
 
     def blit(self, index1, index2, string):
         """更新区块"""
@@ -26,14 +26,14 @@ class StdGuiIO(tk.Text):
         self.delete(index1, index2)
         self.insert(ori, string)
         self.config(state='disabled')
-        self.update()
+        self.update_idletasks()
 
     def clear(self):
         """清空内容"""
         self.config(state='normal')
         self.delete('0.0', 'end')
         self.config(state='disabled')
-        self.update()
+        self.update_idletasks()
 
     def _right_click(self, event):
         try:

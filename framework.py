@@ -221,6 +221,15 @@ class KLine:
         idf = f'cnt_{func.__code__.co_linetable.hex()}_{interval}'
         return self._load_cache(idf, lambda: self.get_series(func).rolling(interval, 1).sum())[self.date]
 
+    def every(self, func: FunctionType | pd.Series, interval=0):
+        """判断是否每根k线都满足条件"""
+        lv = interval if interval != 0 else self.get_series(func).index.get_loc(self.date) + 1
+        return self.count(func, interval) == lv
+
+    def exist(self, func: FunctionType | pd.Series, interval=0):
+        """判断是否存在满足条件的k线"""
+        return self.count(func, interval) > 0
+
     def ma(self, cycle: int, func: str | FunctionType | pd.Series, *args, **kw):
         """移动均线"""
         if isinstance(func, pd.Series):
@@ -232,11 +241,11 @@ class KLine:
 
     def ndup(self, n: int):
         """连续n日上涨"""
-        return self.count(lambda x: x.increase > 0, n) == n
+        return self.every(lambda x: x.increase > 0, n)
 
     def nddown(self, n: int):
         """连续n日下跌"""
-        return self.count(lambda x: x.increase <= 0, n) == n
+        return self.every(lambda x: x.increase <= 0, n)
 
     def ref(self, span: int, func: str | FunctionType | pd.Series, *args, **kw):
         return self.get_history_value(span, func, *args, **kw)
@@ -327,6 +336,9 @@ class KLine:
             case 'avedev':
                 n, _func = args[:2]
                 idf = f'avedev_{n}_{_func}_{args[2:]}_{kw}'
+            case 'std':
+                n, _func = args[:2]
+                idf = f'std_{n}_{_func}_{args[2:]}_{kw}'
             case 'cci':
                 n = args[:1] if args else 14
                 idf = f'cci_{n}'
@@ -476,6 +488,14 @@ class KLine:
         idf = f'avedev_{n}_{func}_{args}_{kw}'
         func = self.get_series(func, *args, **kw)
         return self._load_cache(idf, lambda: pd.Series(self._rolling_mad(func.values, n), index=func.index))[self.date]
+
+    def std(self, n: int, func: str | FunctionType | pd.Series, *args, **kw):
+        """计算估算标准差"""
+        if isinstance(func, pd.Series):
+            return func.rolling(n, 1).std(ddof=0)
+        idf = f'std_{n}_{func}_{args}_{kw}'
+        func = self.get_series(func, *args, **kw)
+        return self._load_cache(idf, lambda: func.rolling(n, 1).std(ddof=0))[self.date]
 
     def cci(self, n: int = 14):
         """计算cci指标"""

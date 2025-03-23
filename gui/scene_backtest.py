@@ -41,6 +41,7 @@ class SceneBacktest(Scene):
         self._multi.set(False)
         self.fm_result_button = ttk.Frame(self)
         self.fm_result_button.pack()
+        self._bt_region = tk.Button(self.fm_result_button, text='✨', width=3, bg='red', fg='yellow', command=self._switch_region)
         # 实例属性
         self._cfg = self.controller.setting
         self._pool = None
@@ -51,6 +52,7 @@ class SceneBacktest(Scene):
         self._sp_func = None
         self._sp_func_pack = None
         self._mode = self._cfg.strategy_mode
+        self._player_china = True
         # 初始化
         self.bind('<Map>', self._update_config)
         self.bind('<Unmap>', self._stop_download)
@@ -70,11 +72,22 @@ class SceneBacktest(Scene):
         self._mid_inc = 0
         self._exp_inc = 0
 
+    def _switch_region(self):
+        if self.stdio.get('insert-1l', 'end').startswith(('m', 'p')):
+            self.stdio.blit('insert-1l', 'end', '\n')
+        if self._player_china:
+            self.stdio.write('player from Internation.\n')
+            self._bt_region.config(text='🌟', bg='blue', fg='white')
+        else:
+            self._bt_region.config(text='✨', bg='red', fg='yellow')
+            self.stdio.write('player from China.\n')
+        self._player_china = not self._player_china
+
     def _enable_multi(self):
         if self.progressbar.is_running():
             showwarning('警告', '请先等待程序执行完毕。', parent=self.root)
             return
-        if self.stdio.get('insert-1l', 'end').startswith('m'):
+        if self.stdio.get('insert-1l', 'end').startswith(('m', 'p')):
             self.stdio.blit('insert-1l', 'end', '\n')
         if self._multi.get():
             self._multi.set(False)
@@ -118,6 +131,7 @@ class SceneBacktest(Scene):
             self._bt_extend_start.grid(row=0, column=0, ipady=2)
         else:
             self._bt_extend_start.grid_forget()
+        self._bt_region.grid(row=0, column=1)
 
     def _load(self):
         pool = self._cfg.pool
@@ -286,7 +300,7 @@ class SceneBacktest(Scene):
                     li_stg.append(lambda x: stg_send_func(x, td_sl.res))
         self.stdio.clear()
         self.stdio.write('backtesting..\n')
-        self._player = InvestorChina(self._market)
+        self._player = InvestorChina(self._market) if self._player_china else Investor(self._market)
         td_load = BacktestThread(self._player, li_stg)
         td_load.set_callback(CallbackFactory.get_instance(td_load))
         self.progressbar.load_thread(td_load)
@@ -327,14 +341,14 @@ class SceneBacktest(Scene):
         bt_draw_plt = ttk.Button(self.fm_result_button, text='绘制图表', command=self._draw_plt)
         bt_draw_plt.grid(row=0, column=0, padx=2)
         bt_history = ttk.Button(self.fm_result_button, text='查看操作记录', command=self._inquire_history)
-        bt_history.grid(row=0, column=1, padx=2)
+        bt_history.grid(row=0, column=2, padx=2)
 
     def _get_udc(self, value, prop):
         ref = self.__getattribute__(prop)
         if value > ref:
-            return '/\\'
+            return '↑'
         elif value < ref:
-            return '\\/'
+            return '↓'
         return ''
 
     def _draw_plt(self):
@@ -382,24 +396,17 @@ class SceneBacktest(Scene):
                     swnd.title('操作记录')
                     swnd.geometry('800x400')
                     tw = ttk.Treeview(swnd, show='headings', columns=('0', '1', '2', '3', '4', '5'))
-                    tw.heading('0', text='标的')
-                    tw.heading('1', text='建仓时间')
-                    tw.heading('2', text='持仓周期')
-                    tw.heading('3', text='最大收益')
-                    tw.heading('4', text='最大回撤')
-                    tw.heading('5', text='收益率')
-                    tw.column('0', width=100)
-                    tw.column('1', width=100)
-                    tw.column('2', width=100)
-                    tw.column('3', width=100)
-                    tw.column('4', width=100)
-                    tw.column('5', width=100)
+                    sorter = CachedTreeviewSorter(tw)
+                    headers = ['标的', '建仓时间', '持仓周期', '最大收益', '最大回撤', '收益率']
+                    for h, header in enumerate(headers):
+                        tw.heading(str(h), text=header, command=lambda c=str(h): sorter.sort_column(c, False))
+                        tw.column(str(h), width=100)
                     tw.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
                     scb = ttk.Scrollbar(swnd)
                     scb.config(command=tw.yview)
                     tw.config(yscrollcommand=scb.set)
                     scb.pack(fill=tk.Y, side=tk.LEFT)
-                    _tw_insert(tw, self._player.history_operate)
+                    _tw_insert(sorter, self._player.history_operate)
 
                     def call_menu(event):
                         mb = tk.Menu(tw, tearoff=0)

@@ -11,11 +11,82 @@ import tkinter as tk
 from framework import InvestorTest
 
 
-def _tw_insert(tw, values):
+class CachedTreeviewSorter:
+    def __init__(self, treeview):
+        self.treeview: ttk.Treeview = treeview
+        self.cached_data = {}  # 格式: {item_id: [converted_value0, converted_value1, ...]}
+        self.current_sort_column = None  # 当前排序列
+        self.is_reverse = False  # 当前排序方向
+
+        # 配置箭头符号
+        self.SORT_SYMBOLS = {
+            'asc': ' ▲',
+            'desc': ' ▼'
+        }
+
+    def insert_item(self, parent, index, values, **kwargs):
+        """插入数据并缓存转换后的值"""
+        item_id = self.treeview.insert(parent, index, values=values, **kwargs)
+        converted_values = []
+        for col, val in enumerate(values):
+            try:
+                converted = float(val)
+            except (ValueError, TypeError):
+                converted = val
+            converted_values.append(converted)
+        self.cached_data[item_id] = converted_values
+        return item_id
+
+    def _clear_sort_symbols(self):
+        """清除所有表头的排序符号"""
+        for col in self.treeview["columns"]:
+            original_text = self.treeview.heading(col)['text']
+            # 移除可能存在的排序符号
+            clean_text = original_text.replace(self.SORT_SYMBOLS['asc'], '') \
+                .replace(self.SORT_SYMBOLS['desc'], '')
+            self.treeview.heading(col, text=clean_text)
+
+    def sort_column(self, col, reverse):
+        """使用缓存数据进行高效排序"""
+        # 清除所有排序符号
+        self._clear_sort_symbols()
+
+        # 更新当前排序状态
+        if self.current_sort_column == col:
+            self.is_reverse = not self.is_reverse
+        else:
+            self.current_sort_column = col
+            self.is_reverse = False
+
+        # 添加新排序符号
+        original_text = self.treeview.heading(col)['text']
+        symbol = self.SORT_SYMBOLS['desc'] if self.is_reverse else self.SORT_SYMBOLS['asc']
+        self.treeview.heading(col, text=f"{original_text}{symbol}")
+        # 执行排序
+        col_index = int(col)
+        items = list(self.treeview.get_children())
+
+        # 直接使用缓存数据生成排序键
+        items.sort(key=lambda x: self.cached_data[x][col_index], reverse=reverse)
+
+        # 批量移动项（Treeview内部优化）
+        for index, item in enumerate(items):
+            self.treeview.move(item, '', index)
+
+        # 更新表头排序方向
+        self.treeview.heading(col, command=lambda: self.sort_column(col, not reverse))
+
+
+def _tw_insert(tw: ttk.Treeview | CachedTreeviewSorter, values):
     tag = True
     for i in values:
-        tw.insert('', 'end', values=i, tags=(str(tag),))
+        if isinstance(tw, CachedTreeviewSorter):
+            tw.insert_item('', 'end', values=i, tags=(str(tag),))
+        else:
+            tw.insert('', 'end', values=i, tags=(str(tag),))
         tag = not tag
+    if isinstance(tw, CachedTreeviewSorter):
+        tw = tw.treeview
     tw.tag_configure('True', background='#E8E8E8')
     tw.tag_configure('False', background='#DFDFDF')
 
