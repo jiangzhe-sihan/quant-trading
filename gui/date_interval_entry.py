@@ -6,9 +6,9 @@ class DateIntervalEntry(ttk.Frame):
     def __init__(self, master, **kw):
         super().__init__(master, **kw)
         self.fm_start_date = ttk.Frame(self)
-        self.fm_start_date.pack(side=tk.LEFT, padx=5)
+        self.fm_start_date.pack(side=tk.LEFT, padx=10)
         self.fm_end_date = ttk.Frame(self)
-        self.fm_end_date.pack(side=tk.LEFT, padx=5)
+        self.fm_end_date.pack(side=tk.LEFT, padx=10)
         self.lb_start = ttk.Label(self.fm_start_date, text='开始时间：')
         self.lb_start.grid(row=0, column=0, sticky=tk.W)
         self.de_start_time = DateEntry(self.fm_start_date)

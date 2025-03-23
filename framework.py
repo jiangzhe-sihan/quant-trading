@@ -1038,6 +1038,10 @@ class Investor:
         return self._gp_irt.index(li[-1]), li[-1].single_exp_inc
 
     @property
+    def count(self):
+        return self._gp_irt[0].count
+
+    @property
     def static(self):
         """静态变量的获取方法"""
         return self._static
@@ -1398,3 +1402,7 @@ class InvRater:
         inc = (self.mid_win + self.avg_win) / 2 + 1
         lose = (self.avg_lose + self.mid_lose) / 2 + 1
         return inc ** winr * lose ** loser - 1
+
+    @property
+    def count(self):
+        return len(self._li_win) + len(self._li_lose)

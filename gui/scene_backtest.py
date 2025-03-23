@@ -11,6 +11,7 @@ import backtest
 from tools import *
 from tkinter.filedialog import asksaveasfilename
 import csv
+from math import log
 
 
 class SceneBacktest(Scene):
@@ -23,7 +24,7 @@ class SceneBacktest(Scene):
         self.fm_progress.pack(pady=10)
         self.progressbar = ThreadProgressBar(self.fm_progress)
         self.progressbar.pack(fill=tk.X)
-        self.stdio = StdGuiIO(self.fm_progress, width=28, height=8, bg='#2B2B2B', fg='#A2AAAC')
+        self.stdio = StdGuiIO(self.fm_progress, width=29, height=8, bg='#2B2B2B', fg='#A2AAAC')
         self.stdio.pack()
         self.fm_option_button = ttk.Frame(self)
         self.fm_option_button.pack(pady=2)
@@ -71,6 +72,8 @@ class SceneBacktest(Scene):
         self._mid_lose = 0
         self._mid_inc = 0
         self._exp_inc = 0
+        self._exp_value = 0
+        self._best_span = 0
 
     def _switch_region(self):
         if self.stdio.get('insert-1l', 'end').startswith(('m', 'p')):
@@ -318,6 +321,7 @@ class SceneBacktest(Scene):
         mid_win = self._player.mid_win
         mid_lose = self._player.mid_lose
         exp_inc = self._player.exp_inc
+        exp_value = pow(1 + exp_inc, self._player.count)
         # 显示信息
         self.stdio.write('backtest completed.\n')
         self.stdio.write('单位净值:  {}  {}\n'.format(self._player.get_value(), self._get_udc(value, '_value')))
@@ -331,12 +335,15 @@ class SceneBacktest(Scene):
         self.stdio.write('中位正收益: {:.2f} %  {}\n'.format(mid_win * 100, self._get_udc(mid_win, '_mid_inc')))
         self.stdio.write('中位负收益: {:.2f} %  {}\n'.format(mid_lose * 100, self._get_udc(mid_lose, '_mid_lose')))
         self.stdio.write('预期收益率: {:.2f} %  {}\n'.format(exp_inc * 100, self._get_udc(exp_inc, '_exp_inc')))
+        self.stdio.write('预期资金变化: ×{:.2f}  {}\n'.format(exp_value, self._get_udc(exp_value, '_exp_value')))
         span, sincr = self._player.best_span()
-        self.stdio.write('最佳周期-收益：{}-{:.2f} %\n'.format(span, sincr * 100))
+        bs_value = sincr / log(span)
+        self.stdio.write('最佳周期-收益：{}-{:.2f} %  {}\n'.format(span, sincr * 100, self._get_udc(bs_value, '_best_span')))
         # 更新记录
         self._value, self._win_rate, self._sum_inc, self._max_down = value, win_rate, sum_inc, max_down
         self._max_inc, self._max_lose, self._avg_inc, self._avg_lose = max_win, max_lose, avg_win, avg_lose
-        self._mid_inc, self._mid_lose, self._exp_inc = mid_win, mid_lose, exp_inc
+        self._mid_inc, self._mid_lose, self._exp_inc, self._exp_value = mid_win, mid_lose, exp_inc, exp_value
+        self._best_span = bs_value
         # 添加查看按钮
         bt_draw_plt = ttk.Button(self.fm_result_button, text='绘制图表', command=self._draw_plt)
         bt_draw_plt.grid(row=0, column=0, padx=2)
