@@ -321,7 +321,7 @@ class SceneBacktest(Scene):
         mid_win = self._player.mid_win
         mid_lose = self._player.mid_lose
         exp_inc = self._player.exp_inc
-        exp_value = pow(1 + exp_inc, self._player.count)
+        exp_value = pow(1 + exp_inc, self._player.count * win_rate) * pow(1 + (mid_lose + avg_lose) / 2, self._player.count * (1 - win_rate))
         # 显示信息
         self.stdio.write('backtest completed.\n')
         self.stdio.write('单位净值:  {}  {}\n'.format(self._player.get_value(), self._get_udc(value, '_value')))
@@ -337,7 +337,7 @@ class SceneBacktest(Scene):
         self.stdio.write('预期收益率: {:.2f} %  {}\n'.format(exp_inc * 100, self._get_udc(exp_inc, '_exp_inc')))
         self.stdio.write('预期资金变化: ×{:.2f}  {}\n'.format(exp_value, self._get_udc(exp_value, '_exp_value')))
         span, sincr = self._player.best_span()
-        bs_value = sincr / log(span)
+        bs_value = sincr / (1 + log(span))
         self.stdio.write('最佳周期-收益：{}-{:.2f} %  {}\n'.format(span, sincr * 100, self._get_udc(bs_value, '_best_span')))
         # 更新记录
         self._value, self._win_rate, self._sum_inc, self._max_down = value, win_rate, sum_inc, max_down
