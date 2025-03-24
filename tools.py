@@ -238,8 +238,8 @@ def get_stock_list(fs):
     e, r = count // p, count % p
     if r:
         e += 1
-    session = get_aio_session()
     loop = get_event_loop()
+    session = get_aio_session()
     sem = create_semaphore(50)
     tasks = [get_stocks(session, sem, url, i, p, fs, ua) for i in range(2, e + 1)]
     res = loop.run_until_complete(gather(*tasks))

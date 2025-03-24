@@ -6,12 +6,15 @@ from gui.check_board import *
 from gui.signal_explorer import *
 from general_thread import *
 from gui.thread_progress_bar import *
+from gui.stock_listbox import *
 from framework import *
 import backtest
 from tools import *
 from tkinter.filedialog import asksaveasfilename
 import csv
 from math import log
+from pandas import to_datetime
+from datetime import timedelta
 
 
 class SceneBacktest(Scene):
@@ -54,6 +57,8 @@ class SceneBacktest(Scene):
         self._sp_func_pack = None
         self._mode = self._cfg.strategy_mode
         self._player_china = True
+        self._slist = None
+        self._plt_candle = None
         # 初始化
         self.bind('<Map>', self._update_config)
         self.bind('<Unmap>', self._stop_download)
@@ -254,6 +259,8 @@ class SceneBacktest(Scene):
         act = askyesno('回测', dsc, parent=self.root)
         if not act:
             return
+        self._slist.destroy() if isinstance(self._slist, StockListbox) else None
+        self._slist = None
         if pool in CommonPool.refer:
             pool = pool.replace('*', '').strip()
         pool_path = '../data/' + pool
@@ -322,7 +329,8 @@ class SceneBacktest(Scene):
         mid_lose = self._player.mid_lose
         exp_inc = self._player.exp_inc
         count = min(self._player.count, len(self._market))
-        exp_value = pow(1 + exp_inc, count * win_rate) * pow(1 + (mid_lose + avg_lose) / 2, count * (1 - win_rate))
+        _wr = pow(win_rate, max(1, self._player.count / len(self._market)))
+        exp_value = pow(1 + exp_inc, count * _wr) * pow(1 + (mid_lose + avg_lose) / 2, count * (1 - _wr))
         # 显示信息
         self.stdio.write('backtest completed.\n')
         self.stdio.write('单位净值:  {}  {}\n'.format(self._player.get_value(), self._get_udc(value, '_value')))
@@ -417,11 +425,32 @@ class SceneBacktest(Scene):
                     _tw_insert(sorter, self._player.history_operate)
 
                     def call_menu(event):
+                        cur = tw.selection()
                         mb = tk.Menu(tw, tearoff=0)
+                        if cur:
+                            symbol, date = tw.item(cur[0], 'values')[:2]
+                            date = to_datetime(date)
+                            quotes = self._market.get_quotes(date)
+                            while not quotes:
+                                date -= timedelta(1)
+                                quotes = self._market.get_quotes(date)
+                            candle, adp = quotes[symbol].candle()
+                            if self._slist is None:
+                                self._slist = StockListbox(tw.winfo_toplevel())
+                            slist = self._slist
+                            slist.set_info(quotes, self._player, self._market)
+                            signal = self._player.get_signal(symbol)
+                            mb.add_command(
+                                label='绘制K线',
+                                command=lambda: self.draw_candle(candle, adp, date, symbol, slist, signal))
+                            mb.add_separator()
                         mb.add_command(label='导出为CSV', command=lambda: self._export_csv(swnd))
                         mb.post(event.x_root, event.y_root)
                     tw.bind('<Button-3>', call_menu)
         PlotThread.update()
+
+    def draw_candle(self, candle, adp, date, symbol, slist, signal):
+        self._plt_candle = draw_kline(candle, adp, date, symbol, slist, signal)
 
     def _export_csv(self, parent):
         file_path = asksaveasfilename(

@@ -62,6 +62,25 @@ normal_font_left = {
 }
 
 
+def draw_kline(candle, adp, date, symbol, slist, signal=None, style=None):
+    if style is None:
+        mc = mpf.make_marketcolors(
+            up='forestgreen',
+            down='crimson',
+            edge='inherit',
+            wick='inherit',
+            volume='inherit',
+            inherit=True,
+        )
+        style = mpf.make_mpf_style(
+            gridaxis='horizontal',
+            gridstyle='-.',
+            marketcolors=mc,
+            rc={'font.family': 'SimHei'}
+        )
+    return InterCandle(candle, style, symbol, signal, date, adp, slist)
+
+
 class InterCandle:  # 定义一个交互K线图类
     def __init__(self, data: pandas.DataFrame, my_style, symbol, signal, ctime, adp, parent):
         # 初始化交互式K线图对象，历史数据作为唯一的参数用于初始化对象
