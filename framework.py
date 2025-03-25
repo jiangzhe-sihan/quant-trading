@@ -1312,16 +1312,43 @@ class InvestorChina(Investor):
 
 
 class InvestorTest(Investor):
-    """测试投资者：只更新操作列表不模拟交易"""
+    """测试投资者：只更新操作列表不记录数据"""
     def update(self):
         self._update_t()
         self._record_history(False)
         if self.market.next() == 1:
             return False
-        self.li_buy.clear()
-        self.li_sell.clear()
-        self.li_t.clear()
+        while self.li_buy:
+            self.buy(self.li_buy.pop())
+        while self.li_sell:
+            self.sell(self.li_sell.pop())
+        while self.li_t:
+            self.t(self.li_t.pop())
+        for k, v in self._warehouse.items():
+            if k in self.market.tell:
+                v.current = self.market.tell[k].close
         return True
+
+    def _buy(self, symbol: str):
+        volume = 100
+        price = self._get_target_price(symbol, self._price_buy)
+        if symbol not in self._warehouse:
+            self._warehouse[symbol] = Order(price, volume, self.market.date_handler.get_inter())
+        else:
+            self._warehouse[symbol].current = price
+            self._warehouse[symbol].overweight(volume)
+
+    def _sell(self, symbol: str):
+        self._warehouse.pop(symbol)
+
+    def _t(self, symbol: str):
+        price = self._get_target_price(symbol, self._price_buy)
+        if symbol in self._warehouse:
+            volume = self._warehouse[symbol].volume
+            self._warehouse[symbol].current = price
+            self._warehouse[symbol].overweight(volume)
+        else:
+            self._warehouse[symbol] = Order(price, 100, self.market.date_handler.get_inter())
 
 
 class InvRater:
