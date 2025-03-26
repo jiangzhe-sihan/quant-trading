@@ -66,12 +66,12 @@ class ThreadProgressBar(ttk.Progressbar):
         self.update()
 
     def destroy(self):
-        super().destroy()
         try:
             self._td.cancel()
         except:
             return
         self._exit_thread()
+        super().destroy()
 
     def load_thread(self, td):
         self._count = 0

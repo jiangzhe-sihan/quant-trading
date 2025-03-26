@@ -1320,13 +1320,15 @@ class InvestorTest(Investor):
             return False
         while self.li_buy:
             self.buy(self.li_buy.pop())
-        while self.li_sell:
-            self.sell(self.li_sell.pop())
         while self.li_t:
             self.t(self.li_t.pop())
         for k, v in self._warehouse.items():
             if k in self.market.tell:
                 v.current = self.market.tell[k].close
+        while self.li_sell:
+            k = self.li_sell.pop()
+            if k in self.warehouse:
+                self.warehouse.pop(k)
         return True
 
     def _buy(self, symbol: str):
@@ -1337,9 +1339,6 @@ class InvestorTest(Investor):
         else:
             self._warehouse[symbol].current = price
             self._warehouse[symbol].overweight(volume)
-
-    def _sell(self, symbol: str):
-        self._warehouse.pop(symbol)
 
     def _t(self, symbol: str):
         price = self._get_target_price(symbol, self._price_buy)

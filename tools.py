@@ -216,7 +216,10 @@ async def get_stocks(session, sem, url, s, p, fs, ua):
     n = random.randint(1, 99)
     res = await aio_get(
         session, url.format(n, s, p, fs), sem,
-        headers={'User-Agent': ua, 'host': f'{n}.push2.eastmoney.com'}
+        headers={
+            'User-Agent': ua, 'host': f'{n}.push2.eastmoney.com',
+            'Referer': 'https://quote.eastmoney.com/center/gridlist.html',
+        }
     )
     return res
 
@@ -226,7 +229,7 @@ def get_stock_list(fs):
     url = 'http://{}.push2.eastmoney.com/api/qt/clist/get?pn={}&pz={}&po=1&np=1&fltt=2&invt=2&fid=f3&{}&fields=f12,f13,f14'
     session = requests.Session()
     s = 1
-    p = 20
+    p = 50
     n = random.randint(1, 99)
     res = session.get(url.format(n, s, p, fs), headers={'User-Agent': ua, 'host': f'{n}.push2.eastmoney.com'})
     lis = []
@@ -239,11 +242,21 @@ def get_stock_list(fs):
     if r:
         e += 1
     loop = get_event_loop()
-    session = get_aio_session()
-    sem = create_semaphore(50)
-    tasks = [get_stocks(session, sem, url, i, p, fs, ua) for i in range(2, e + 1)]
+    _t = 50
+    es, rs = e // _t, e % _t
+    if rs:
+        es += 1
+    sessions = [get_aio_session() for _ in range(es)]
+    sem = create_semaphore(_t)
+    tasks = [get_stocks(sessions[(i - 1) // _t], sem, url, i, p, fs, ua) for i in range(2, e + 1)]
     res = loop.run_until_complete(gather(*tasks))
-    loop.run_until_complete(session.close())
+    for session in sessions:
+        loop.run_until_complete(session.close())
+    # session = get_aio_session()
+    # sem = create_semaphore(_t)
+    # tasks = [get_stocks(session, sem, url, i, p, fs, ua) for i in range(2, e + 1)]
+    # res = loop.run_until_complete(gather(*tasks))
+    # loop.run_until_complete(session.close())
     for i in res:
         for j in json.loads(i)['data']['diff']:
             lis.append(f'{j["f13"]}.{j["f12"]}')
