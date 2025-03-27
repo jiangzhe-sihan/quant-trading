@@ -351,8 +351,9 @@ class SceneBacktest(Scene):
         # 更新记录
         self._value, self._win_rate, self._sum_inc, self._max_down = value, win_rate, sum_inc, max_down
         self._max_inc, self._max_lose, self._avg_inc, self._avg_lose = max_win, max_lose, avg_win, avg_lose
-        self._mid_inc, self._mid_lose, self._exp_inc, self._exp_value = mid_win, mid_lose, exp_inc, exp_value
+        self._mid_inc, self._mid_lose, self._exp_inc = mid_win, mid_lose, exp_inc
         self._best_span = bs_value
+        self._exp_value = exp_value if isinstance(exp_value, (float, int)) else 0
         # 添加查看按钮
         bt_draw_plt = ttk.Button(self.fm_result_button, text='绘制图表', command=self._draw_plt)
         bt_draw_plt.grid(row=0, column=0, padx=2)
@@ -361,6 +362,8 @@ class SceneBacktest(Scene):
 
     def _get_udc(self, value, prop):
         ref = self.__getattribute__(prop)
+        if not isinstance(value, (int, float)):
+            return ''
         if value > ref:
             return '↑'
         elif value < ref:
