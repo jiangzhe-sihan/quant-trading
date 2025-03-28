@@ -617,8 +617,8 @@ class KLine:
         res['hs'] = self.get_series('hs')
         res['lz'] = self.get_series('market_value')
         adp = pd.DataFrame()
-        adp['ma20'] = self.get_series('ma', 20, 'close')
-        adp['ma60'] = self.get_series('ma', 60, 'close')
+        adp['ma20'] = self.ema(20, res['close'])
+        adp['ma60'] = self.ema(60, res['close'])
         self._cache[idf] = res, adp
         return res, adp
 

@@ -52,6 +52,9 @@ class ThreadProgressBar(ttk.Progressbar):
             self._exit_thread()
 
     def _exit_thread(self):
+        if self._td is None:
+            self._flush()
+            return
         if self._td.code != 0:
             if self._td.msg is not None:
                 msg = self._td.msg
@@ -59,17 +62,17 @@ class ThreadProgressBar(ttk.Progressbar):
                 msg = str(self._td.exception)
             showerror(self._td.exception.__class__.__name__, msg, parent=self)
         self._td.join()
-        # self._td = None
+        self._td = None
+        self._flush()
+
+    def _flush(self):
         self._statu.set(not self._statu.get())
         self._idle_count = 0
         self._start_flag = False
         self.update()
 
     def destroy(self):
-        try:
-            self._td.cancel()
-        except:
-            return
+        self.stop_thread()
         self._exit_thread()
         super().destroy()
 
@@ -86,3 +89,8 @@ class ThreadProgressBar(ttk.Progressbar):
             self.start()
             self._wait_thread_indeterminate()
         self.waitvar(self._statu)
+
+    def stop_thread(self):
+        if not self.is_running():
+            return
+        self._td.cancel()

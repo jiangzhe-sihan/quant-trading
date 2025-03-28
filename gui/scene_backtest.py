@@ -59,6 +59,7 @@ class SceneBacktest(Scene):
         self._player_china = True
         self._slist = None
         self._plt_candle = None
+        self._pause_able = False
         # 初始化
         self.bind('<Map>', self._update_config)
         self.bind('<Unmap>', self._stop_download)
@@ -79,6 +80,21 @@ class SceneBacktest(Scene):
         self._exp_inc = 0
         self._exp_value = 0
         self._best_span = 0
+
+    def _switch_pause_able(self):
+        if not self._pause_able:
+            self._bt_region.config(text='⏹', bg='white', fg='black', command=self._pause)
+        else:
+            if self._player_china:
+                self._bt_region.config(text='✨', bg='red', fg='yellow')
+            else:
+                self._bt_region.config(text='🌟', bg='blue', fg='white')
+            self._bt_region.config(command=self._switch_region)
+        self._pause_able = not self._pause_able
+
+    def _pause(self):
+        self.progressbar.stop_thread()
+        self.stdio.write('stopped.\n')
 
     def _switch_region(self):
         if self.stdio.get('insert-1l', 'end').startswith(('m', 'p')):
@@ -192,6 +208,7 @@ class SceneBacktest(Scene):
         self._sp_func = self._sp_func_pack = None
 
     def _download_market(self, date_info):
+        self._switch_pause_able()
         pool = self._cfg.pool
         try:
             li_pool = self._cfg.pool_loader.get_pool(pool)
@@ -205,6 +222,7 @@ class SceneBacktest(Scene):
         self.progressbar.load_thread(td_download)
         if td_download.res is None:
             self.stdio.write('download failed.\n')
+            self._switch_pause_able()
             return 1
         res = td_download.res
         self.stdio.write('download completed.\n')
@@ -216,6 +234,7 @@ class SceneBacktest(Scene):
         td_write.set_callback(CallbackFactory.get_instance(td_write))
         self.progressbar.load_thread(td_write)
         self.stdio.write('write completed.\n')
+        self._switch_pause_able()
 
     def update_data(self):
         if self.progressbar.is_running():
@@ -267,6 +286,7 @@ class SceneBacktest(Scene):
         true_date_info = load_pkl(pool_path + '/' + 'date_info.pkl')
         if date_info[0] < true_date_info[0] or date_info[1] > true_date_info[1]:
             showwarning('警告', '超出数据记录的有效日期\n{}-{}。'.format(*true_date_info), parent=self.root)
+        self._switch_pause_able()
         self._market.stime = datetime.datetime(*date_info[0])
         self._market.ctime = datetime.datetime(*date_info[1])
         self._market.remake()
@@ -315,6 +335,7 @@ class SceneBacktest(Scene):
         td_load.set_callback(CallbackFactory.get_instance(td_load))
         self.progressbar.load_thread(td_load)
         if td_load.code != 0:
+            self._switch_pause_able()
             return
         # 读取回测统计
         value = self._player.value
@@ -359,6 +380,7 @@ class SceneBacktest(Scene):
         bt_draw_plt.grid(row=0, column=0, padx=2)
         bt_history = ttk.Button(self.fm_result_button, text='查看操作记录', command=self._inquire_history)
         bt_history.grid(row=0, column=2, padx=2)
+        self._switch_pause_able()
 
     def _get_udc(self, value, prop):
         ref = self.__getattribute__(prop)
