@@ -350,7 +350,7 @@ class SceneBacktest(Scene):
         mid_lose = self._player.mid_lose
         exp_inc = self._player.exp_inc
         count = min(self._player.count, len(self._market))
-        _wr = pow(win_rate, max(1, self._player.count / len(self._market)))
+        _wr = pow(win_rate, log(max(1, self._player.count / len(self._market))) + 1)
         exp_value = pow(1 + exp_inc, count * _wr) * pow(1 + (mid_lose + avg_lose) / 2, count * (1 - _wr))
         # 显示信息
         self.stdio.write('backtest completed.\n')
