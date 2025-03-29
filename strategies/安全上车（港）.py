@@ -35,5 +35,6 @@ def func(self):
                 em5 = v.ema(m5, 'close')
                 sdv = (em2 + em3) / 2
                 qsv = (em4 + em5) / 2
-                if v.close > max(max(em1, sdv), qsv):
+                ref_qsv = (v.ref(1, 'ema', m4, 'close') + v.ref(1, 'ema', m5, 'close')) / 2
+                if v.close > sdv and em1 > sdv and qsv > ref_qsv:
                     self.li_buy.add(k)

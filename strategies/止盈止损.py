@@ -11,7 +11,7 @@ def func(self):
     self.set_price_buy('low')
     self.set_price_sell('high')
     for k, v in self.warehouse.items():
-        if v.income_pct > .06 or v.income_pct < -.02:
+        if v.income_pct > .02 or v.income_pct < -.02:
             self.li_sell.add(k)
     for k, v in self.market.tell.items():
         # write your strategy here

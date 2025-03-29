@@ -37,7 +37,7 @@ def func(self):
             continue
         if k in obs and self.static[v.code][1][v.date]:
             self.li_buy.add(k)
-            obs.remove(k) if k in obs else None
+            obs.remove(k)
             continue
         if self.static[v.code][2][v.date]:
             self.li_sell.add(k)
