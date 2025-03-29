@@ -1418,7 +1418,7 @@ class InvRater:
         avg_inc = (self.avg_win + 1) * (self.avg_lose + 1)
         mid_inc = (self.mid_win + 1) * (self.mid_lose + 1)
         exp_win = (avg_inc + mid_inc) / 2 - 1
-        exp_lose = (self.max_lose + self.max_down) / 2
+        exp_lose = ((min(self.avg_lose, self.mid_lose) + self.max_down) / 2 + self.max_lose) / 2
         return exp_win * self.win_rate + exp_lose * (1 - self.win_rate)
 
     @property
