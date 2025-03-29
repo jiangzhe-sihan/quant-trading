@@ -17,6 +17,7 @@ class CachedTreeviewSorter:
         self.cached_data = {}  # 格式: {item_id: [converted_value0, converted_value1, ...]}
         self.current_sort_column = None  # 当前排序列
         self.is_reverse = False  # 当前排序方向
+        self.is_sorting = False  # 是否正在排列
 
         # 配置箭头符号
         self.SORT_SYMBOLS = {
@@ -48,6 +49,12 @@ class CachedTreeviewSorter:
 
     def sort_column(self, col, reverse):
         """使用缓存数据进行高效排序"""
+        # 禁止打断排序
+        if self.is_sorting:
+            self.treeview.bell()
+            return
+        # 排序开始
+        self.is_sorting = True
         # 清除所有排序符号
         self._clear_sort_symbols()
 
@@ -69,12 +76,22 @@ class CachedTreeviewSorter:
         # 直接使用缓存数据生成排序键
         items.sort(key=lambda x: self.cached_data[x][col_index], reverse=reverse)
 
+        n = 0
+        self.treeview.config(cursor='watch')
+
         # 批量移动项（Treeview内部优化）
         for index, item in enumerate(items):
             self.treeview.move(item, '', index)
+            # 定期调用update响应用户输入
+            self.treeview.update() if n % 1000 == 0 else None
+            n += 1
+
+        self.treeview.config(cursor='arrow')
 
         # 更新表头排序方向
         self.treeview.heading(col, command=lambda: self.sort_column(col, not reverse))
+        # 排序结束
+        self.is_sorting = False
 
 
 def _tw_insert(tw: ttk.Treeview | CachedTreeviewSorter, values):
