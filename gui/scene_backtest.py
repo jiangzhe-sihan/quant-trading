@@ -308,6 +308,7 @@ class SceneBacktest(Scene):
                     td_sl = MarketSliceProcessor(self._market, group_buy, group_sell)
                     self.progressbar.load_thread(td_sl)
                     if td_sl.code != 0:
+                        self._switch_pause_able()
                         return
                     self.stdio.write('signal sent already.\n')
                     self._sp_func = _li_stg[0]
@@ -324,6 +325,7 @@ class SceneBacktest(Scene):
                     td_sl = CommonMarketSliceProcessor(self._market, li_stg, self._cfg.strategy_loader)
                     self.progressbar.load_thread(td_sl)
                     if td_sl.code != 0:
+                        self._switch_pause_able()
                         return
                     self.stdio.write('signal sent already.\n')
                     li_stg.clear()
