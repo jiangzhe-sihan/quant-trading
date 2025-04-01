@@ -27,7 +27,7 @@ def func(self):
             down = v.count(lambda x: x.increase_day < 0, itv)
             down_ex = v.count(lambda x: x.increase_day < 0 and x.volume < x.ref(1, 'volume'), itv)
             c1, c2 = up / up_ex if up_ex else 0, down / down_ex if down_ex else 0
-            if c1 > .8 and c2 > .8 and c1 + c2 > 1.8:
+            if min(c1, c2) > .8 and c1 + c2 > 1.8:
                 em1 = v.ema(m1, 'close')
                 em2 = v.ema(m2, 'close')
                 em3 = v.ema(m3, 'close')
@@ -36,5 +36,5 @@ def func(self):
                 sdv = (em2 + em3) / 2
                 qsv = (em4 + em5) / 2
                 ref_qsv = (v.ref(1, 'ema', m4, 'close') + v.ref(1, 'ema', m5, 'close')) / 2
-                if v.close > sdv and em1 > sdv and qsv > ref_qsv:
+                if min(v.close, em1) > sdv and qsv > ref_qsv:
                     self.li_buy.add(k)

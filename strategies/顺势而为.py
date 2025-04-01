@@ -1,5 +1,5 @@
 # NAME=顺势而为
-# DESCRIPTION=
+# DESCRIPTION=逆势而为
 
 
 prop = [

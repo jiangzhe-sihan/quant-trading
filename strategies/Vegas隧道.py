@@ -15,6 +15,7 @@ def func(self):
     m3 = 169
     m4 = 576
     m5 = 676
+    n = 20
     m = 60
     for k, v in self.market.tell.items():
         # write your strategy here
@@ -42,5 +43,5 @@ def func(self):
             upup = 100 * v.count(inc > 0, m) / m > 49
             condition = vegas & ~v.ref(1, vegas) & power_up & cci_con & start & upup
             self.static[v.code] = condition
-        if self.static[v.code][v.date] and v.amount > 50000000 and v.close > 50:
+        if self.static[v.code][v.date] and v.market_value > 6000000000:
             self.li_buy.add(k)
