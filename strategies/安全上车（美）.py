@@ -19,7 +19,7 @@ def func(self):
     m4 = 576
     m5 = 676
     for k, v in self.market.tell.items():
-        if not ((v.close > 60 and v.amount > 50000000) or 'YINN]' in k or 'YANG]' in k):
+        if not (v.amount > 100000000 and (v.market_value > 20000000000 or v.close > 20)):
             continue
         if v.increase > 0 and v.ref(1, 'volume') and v.volume / v.ref(1, 'volume') > 1.52 and v.hhv(15, 'high') != v.high and v.close > v.ma(5, 'high'):
             up = v.count(lambda x: x.increase > 0, itv)
