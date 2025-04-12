@@ -168,7 +168,7 @@ def new_event_loop() -> asyncio.AbstractEventLoop:
 
 
 def get_aio_session() -> aiohttp.ClientSession:
-    return aiohttp.ClientSession()
+    return aiohttp.ClientSession(loop=get_event_loop())
 
 
 def get_requests_session():
