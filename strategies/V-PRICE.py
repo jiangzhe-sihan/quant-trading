@@ -40,16 +40,12 @@ def func(self):
             pwm2 = v.ema(14, power)
             buy2 = v.cross(pwm1, pwm2) | v.cross(pwm2, pwm1)
             difp = power - v.ref(1, power)
-            vrsi = 100 * v.ema(nr, v.sma(nr, 1, v.max(difp, 0) / v.sma(nr, 1, abs(difp))))
+            vrsi = 100 * v.ema(nr, v.sma(nr, 1, v.max(difp, 0)) / v.sma(nr, 1, abs(difp)))
             buy3 = v.ref(1, vrsi < v.ref(1, vrsi)) & (vrsi > v.ref(1, vrsi))
             close = v.get_series('close')
             zt = close >= v.zt_price(v.ref(1, close), .1)
             self.static[v.code] = (
-                v.cross(close, mv) & zt & buy1 & v.exist(buy3, 6) & v.between(v.count(buy2, 4), 0, 3),
-                v.cross(mv, close)
+                zt & buy1 & v.between(mv, o, c) & (pwm1 > 1) & (vrsi > 40),
             )
         if self.static[v.code][0][v.date]:
             self.li_buy.add(k)
-            continue
-        if self.static[v.code][1][v.date]:
-            self.li_sell.add(k)
