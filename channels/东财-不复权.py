@@ -12,6 +12,9 @@ def func(pool, stime, ctime, callback):
     from tools import load_config
     from configure import ChannelLoader
     import json
+    import time
+    from random import randint
+    import re
     ua = get_user_agent()
 
     async def get_kline(session, sem, scode):
@@ -26,16 +29,16 @@ def func(pool, stime, ctime, callback):
             secid += s[0] + '.'
         secid += s[1]
         params = {
-            # 'cb': cb,
+            'cb': f'jsonp{time.time_ns() // 1000000}',
             'secid': secid,
-            # 'ut': ut,
+            'ut': ''.join([f'{randint(0,65535):4x}' for _ in range(8)]),
             'fields1': 'f1,f2,f3,f4,f5,f6',
             'fields2': 'f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61',
             'klt': '101',
             'fqt': 0,
             'end': '{}{:0>2}{:0>2}'.format(ctime[0], ctime[1], ctime[2]),
             'beg': '{}{:0>2}{:0>2}'.format(stime[0], stime[1], stime[2]),
-            # '_': _
+            'rtntype': 6
         }
         r = await aio_get(
             session,
@@ -67,10 +70,7 @@ def func(pool, stime, ctime, callback):
     res = {}
     li_unquery = []
     for i, scode in task_res:
-        # for j in range(len(i)):
-        #     if i[j] == '{':
-        #         i = i[j:-2]
-        #         break
+        i = re.search(r'jsonp(.*?)\((.*)\)', i).group(2)
         try:
             i = json.loads(i)
         except json.JSONDecodeError:
