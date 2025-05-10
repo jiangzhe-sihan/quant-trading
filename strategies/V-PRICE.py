@@ -45,7 +45,7 @@ def func(self):
             close = v.get_series('close')
             zt = close >= v.zt_price(v.ref(1, close), .1)
             self.static[v.code] = (
-                zt & buy1 & v.between(mv, o, c) & (pwm1 > 1) & (vrsi > 40),
+                zt & buy1 & ~(buy2 & buy3) & v.between(mv, o, c) & (pwm1 > 1) & (vrsi > 40) & ~v.ref(1, v.exist(zt, 10)) & (v.ref(1, v.exist(buy3, 4)) | (amo < 50000000)),
             )
-        if self.static[v.code][0][v.date]:
+        if self.static[v.code][0][v.date] and v.hs < 15:
             self.li_buy.add(k)
