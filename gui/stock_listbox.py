@@ -186,10 +186,23 @@ class StockListbox(tk.Listbox):
         self._eval_wnd = None
 
     def _draw_kline(self, symbol):
-        candle, adp = self._info[symbol].candle()
         p = self._info.popitem()
         self._info.update(dict([p]))
         date = p[1].get_datetime()
+        flag = False
+        info_bup = self._info
+        if symbol not in self._info:
+            market = self._player.market
+            ctime = market.today
+            market.set_time(p[1].date)
+            info = market.get_quotes(-1)
+            market.set_time(ctime)
+            kline = info[symbol]
+            self._info = market.get_quotes(kline.next.date)
+            flag = True
+        candle, adp = self._info[symbol].candle()
+        if flag:
+            self._info = info_bup
         mc = mpf.make_marketcolors(
             up='forestgreen',
             down='crimson',

@@ -884,9 +884,11 @@ class Market:
             return res
         return {}
 
-    def get_quotes(self, now_time: datetime.datetime) -> dict[str, KLine]:
+    def get_quotes(self, now_time: datetime.datetime | int) -> dict[str, KLine]:
         """返回某日行情"""
         ctime = self.date_handler.get_inter()
+        if isinstance(now_time, int):
+            now_time = self._dates[self._date_index + now_time]
         self.date_handler.set_time(now_time)
         res = self.tell
         self.date_handler.set_time(ctime)
@@ -1082,6 +1084,10 @@ class Investor:
             flag = False
             for i in range(3):
                 if symbol in v[i]:
+                    if symbol not in info:
+                        info = self.market.get_quotes(-1)
+                        kline = info[symbol]
+                        info = self.market.get_quotes(kline.next.date)
                     kline = info[symbol]
                     if kline.next:
                         sig[i] = kline.next.low * .99 if not i % 2 else kline.next.high * 1.01
