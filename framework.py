@@ -1129,11 +1129,12 @@ class Investor:
         for k in self.li_sell:
             ac = self._sell_account(k)
             rate += ac
-            self._income_rate += ac
+            # self._income_rate += ac
         if n:
             rate /= n
         # 更新单位净值
         self._value *= (1 + rate)
+        self._income_rate += rate
         # 更新持仓价格
         for k, v in self._warehouse.items():
             if k in self.market.tell:
@@ -1260,10 +1261,11 @@ class Investor:
             self._sell(k)
             ac = v.income_pct
             rate += ac
-            self._income_rate += ac
+            # self._income_rate += ac
         if n:
             rate /= n
         self._value *= (1 + rate)
+        self._income_rate += rate
         self.history_date.append(self.market.date_handler.get_inter())
         self.history_floating.append(self.floating)
         self.history_income_rate.append(self._income_rate)
@@ -1285,6 +1287,16 @@ class Investor:
     def win_rate(self):
         """胜率"""
         return self._gp_irt[0].win_rate
+
+    @property
+    def wins(self):
+        """盈利次数"""
+        return self._gp_irt[0].wins
+
+    @property
+    def loses(self):
+        """亏损次数"""
+        return self._gp_irt[0].loses
 
 
 class InvestorChina(Investor):
@@ -1411,9 +1423,17 @@ class InvRater:
 
     @property
     def win_rate(self):
-        wins = len(self._li_win)
-        loses = len(self._li_lose)
+        wins = self.wins
+        loses = self.loses
         return wins / (wins + loses) if wins else 0
+
+    @property
+    def wins(self):
+        return len(self._li_win)
+
+    @property
+    def loses(self):
+        return len(self._li_lose)
 
     @property
     def max_down(self):

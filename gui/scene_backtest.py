@@ -358,6 +358,7 @@ class SceneBacktest(Scene):
         self.stdio.write('backtest completed.\n')
         self.stdio.write('单位净值:  {}  {}\n'.format(self._player.get_value(), self._get_udc(value, '_value')))
         self.stdio.write('胜率:       {:.2f} %  {}\n'.format(win_rate * 100, self._get_udc(win_rate, '_win_rate')))
+        self.stdio.write('盈亏比:    {}：{}\n'.format(self._player.wins, self._player.loses))
         self.stdio.write('累计收益率: {:.4f}  {}\n'.format(sum_inc, self._get_udc(sum_inc, '_sum_inc')))
         self.stdio.write('最大正收益: {:.2f} %  {}\n'.format(max_win * 100, self._get_udc(max_win, '_max_inc')))
         self.stdio.write('最大负收益: {:.2f} %  {}\n'.format(max_lose * 100, self._get_udc(max_lose, '_max_lose')))
