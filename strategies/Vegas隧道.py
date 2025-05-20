@@ -8,7 +8,7 @@ prop = [
 
 
 def func(self):
-    self.set_price_buy('low')
+    self.set_price_buy('open')
     self.set_price_sell('high')
     m1 = 12
     m2 = 144

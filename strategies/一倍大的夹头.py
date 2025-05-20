@@ -29,7 +29,7 @@ def func(self):
             pwm1 = v.ema(3, power)
             pwm2 = v.ema(14, power)
             difp = power - v.ref(1, power)
-            vrsi = 100 * v.ema(nr, v.sma(nr, 1, v.max(difp, 0) / v.sma(nr, 1, abs(difp))))
+            vrsi = 100 * v.ema(nr, v.sma(nr, 1, v.max(difp, 0)) / v.sma(nr, 1, abs(difp)))
             stick = (c / o - 1) / (inc - 1)
             bl = vol / v.ref(1, vol)
             boom = (bl > 1.3) & (inc - 1 > .01) & (stick > .5)
