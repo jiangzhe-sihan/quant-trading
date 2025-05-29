@@ -5,6 +5,8 @@ import re
 import time
 import winreg
 
+from tkinter.messagebox import askyesno
+
 from os import path, mkdir
 from typing import Iterable
 
@@ -12,6 +14,8 @@ import requests
 import aiohttp
 import asyncio
 import logging
+
+import webbrowser
 
 from general_thread import ProgressThread, MultiThreadLoader
 
@@ -122,12 +126,13 @@ def connect(url: str = None, session: requests.Session = None, method: str = 'GE
 
 
 async def aio_get(session: aiohttp.ClientSession, url: str, sem: asyncio.Semaphore = None, **kw):
-    flag = [False]
+    flag = False
 
     async def get():
+        nonlocal flag
         while True:
             try:
-                if flag[0]:
+                if flag:
                     return
                 async with session.get(url, **kw) as resp:
                     try:
@@ -136,7 +141,7 @@ async def aio_get(session: aiohttp.ClientSession, url: str, sem: asyncio.Semapho
                         if resp.status == 403:
                             await asyncio.sleep(.5)
                             continue
-                        flag[0] = True
+                        flag = True
                         return r
                     except TimeoutError:
                         resp.close()
@@ -145,7 +150,7 @@ async def aio_get(session: aiohttp.ClientSession, url: str, sem: asyncio.Semapho
                         resp.close()
                         raise e
             except aiohttp.ServerDisconnectedError:
-                await asyncio.sleep(.5)
+                await asyncio.sleep(1)
                 continue
     if sem is not None:
         async with sem:
@@ -167,8 +172,9 @@ def new_event_loop() -> asyncio.AbstractEventLoop:
     return loop
 
 
-def get_aio_session() -> aiohttp.ClientSession:
-    return aiohttp.ClientSession(loop=get_event_loop())
+def get_aio_session(limit=None) -> aiohttp.ClientSession:
+    connector = aiohttp.TCPConnector(limit=limit) if limit else None
+    return aiohttp.ClientSession(loop=get_event_loop(), connector=connector)
 
 
 def get_requests_session():

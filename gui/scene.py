@@ -230,7 +230,7 @@ class SceneSetting(Scene):
         lb_extra = tk.Label(fm_extra, text='附加选项')
         lb_extra.pack(side=tk.LEFT)
         option = tk.StringVar()
-        mub_extra = ttk.OptionMenu(fm_extra, option, '无', '无', '导入沪深300', '导入中证500', '导入上证50')
+        mub_extra = ttk.OptionMenu(fm_extra, option, '无', '无', '导入沪深300', '导入中证500', '导入上证50', '导入科创板做市股')
         mub_extra.config(width=12)
         mub_extra.pack(side=tk.RIGHT)
 
@@ -250,6 +250,8 @@ class SceneSetting(Scene):
                         li = get_stock_list('fs=b:BK0701+f:!2')
                     case '导入上证50':
                         li = get_stock_list('fs=b:BK0611')
+                    case '导入科创板做市股':
+                        li = get_stock_list('fs=b:BK1108')
                     case default:
                         li = []
             except Exception as e:

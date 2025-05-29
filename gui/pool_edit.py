@@ -41,7 +41,7 @@ class DynamicEntry(ttk.Entry):
         if not self._start_monitor:
             return
         if self.get_modified():
-            self.after(300, self._confirm_modified)
+            self.after(500, self._confirm_modified)
             self.wait_variable(self._mod_semaphore)
             if not self._mod_flag:
                 self.event_generate('<<Modified>>')
@@ -182,6 +182,7 @@ class PoolEditor(tk.Frame):
         self._lsb.select_clear(0, 'end')
         self._lsb.select_set('end')
         self._lsb.see('end')
+        self._web_searcher.delete('0', 'end')
 
     def _delete_symbol(self, index):
         self._lsb.delete(index)
