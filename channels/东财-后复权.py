@@ -15,6 +15,7 @@ def func(pool, stime, ctime, callback):
     import time
     from random import randint
     import re
+    import asyncio
     ua = get_user_agent()
 
     async def get_kline(session, sem, scode):
@@ -51,6 +52,7 @@ def func(pool, stime, ctime, callback):
             },
             params=params
         )
+        await asyncio.sleep(.5)
         if callback is not None:
             ret = callback()
             if ret != 0:

@@ -15,7 +15,10 @@ def func(pool, stime, ctime, callback):
     import time
     from random import randint
     import re
+    import asyncio
     ua = get_user_agent()
+    ut = ''.join([f'{randint(0,65535):4x}' for _ in range(8)])
+    tm = time.time_ns() // 1000000
 
     async def get_kline(session, sem, scode):
         host = 'push2his.eastmoney.com'
@@ -29,9 +32,9 @@ def func(pool, stime, ctime, callback):
             secid += s[0] + '.'
         secid += s[1]
         params = {
-            'cb': f'jsonp{time.time_ns() // 1000000}',
+            'cb': f'jsonp{tm}',
             'secid': secid,
-            'ut': ''.join([f'{randint(0,65535):4x}' for _ in range(8)]),
+            'ut': ut,
             'fields1': 'f1,f2,f3,f4,f5,f6',
             'fields2': 'f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61',
             'klt': '101',
@@ -51,21 +54,25 @@ def func(pool, stime, ctime, callback):
             },
             params=params
         )
+        await asyncio.sleep(.5)
         if callback is not None:
             ret = callback()
             if ret != 0:
                 raise SystemError('download aborted.')
         return r, scode
     loop = new_event_loop()
-    t = 16
-    sessions = [get_aio_session() for _ in range(t)]
+    t = 50
+    # sessions = [get_aio_session() for _ in range(t)]
+    session = get_aio_session()
     sem = create_semaphore(t)
-    es, er = len(pool) // t, len(pool) % t
-    es += 1 if er else 0
-    task = [get_kline(sessions[(i - 1) // es], sem, pool[i]) for i in range(len(pool))]
+    # es, er = len(pool) // t, len(pool) % t
+    # es += 1 if er else 0
+    # task = [get_kline(sessions[(i - 1) // es], sem, pool[i]) for i in range(len(pool))]
+    task = [get_kline(session, sem, pool[i]) for i in range(len(pool))]
     task_res = loop.run_until_complete(gather(*task))
-    for session in sessions:
-        loop.run_until_complete(session.close())
+    # for session in sessions:
+    #     loop.run_until_complete(session.close())
+    loop.run_until_complete(session.close())
     loop.close()
     res = {}
     li_unquery = []

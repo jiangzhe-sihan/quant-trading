@@ -4,6 +4,7 @@
 
 prop = [
     # ('index_name', lambda x: x.func())
+    ('code', lambda x: x.code),
     ('bl', lambda x: x.volume / x.ref(1, 'volume')),
     ('pwm1', lambda x: x.ema(3, x.count((x.get_series('close') / x.ref(1, x.get_series('close')) > 1) & (x.get_series('volume') / x.ref(1, x.get_series('volume')) > 1), 20) / x.count(x.get_series('close') / x.ref(1, x.get_series('close')) > 1, 20) + x.count((x.get_series('close') / x.ref(1, x.get_series('close')) <= 1) & (x.get_series('volume') / x.ref(1, x.get_series('volume')) < 1), 20) / x.count(x.get_series('close') / x.ref(1, x.get_series('close')) <= 1, 20))[x.date]),
     ('pwm2', lambda x: x.ema(14, x.count((x.get_series('close') / x.ref(1, x.get_series('close')) > 1) & (x.get_series('volume') / x.ref(1, x.get_series('volume')) > 1), 20) / x.count(x.get_series('close') / x.ref(1, x.get_series('close')) > 1, 20) + x.count((x.get_series('close') / x.ref(1, x.get_series('close')) <= 1) & (x.get_series('volume') / x.ref(1, x.get_series('volume')) < 1), 20) / x.count(x.get_series('close') / x.ref(1, x.get_series('close')) <= 1, 20))[x.date]),
@@ -36,7 +37,6 @@ def func(self):
             stick = (c / o - 1) / (inc - 1)
             bl = vol / v.ref(1, vol)
             boom = (bl > 1.3) & (inc - 1 > .02) & (stick > .5)
-            plmt = 10 if v.code.startswith('116') else 20
-            self.static[v.code] = (v.max(pwm1, pwm2) > 1.1) & (vrsi > 46) & (c > plmt) & boom & (v.ref(1, v.exist(boom, 10)))
-        if self.static[v.code][v.date] and v.amount > 50000000:
+            self.static[v.code] = v.between(v.max(pwm1, pwm2), 1, 1.5) & (vrsi > 46) & (c > 23) & boom & (v.ref(2, v.exist(boom, 3))) & ~(v.count(bl > 1.3, 4) > 1) & (bl < 3.5)
+        if self.static[v.code][v.date]:
             self.li_buy.add(k)

@@ -10,7 +10,7 @@ prop = [
 
 
 def func(self):
-    self.set_price_buy('low')
+    self.set_price_buy('open')
     self.set_price_sell('high')
     itv = 60
     m1 = 12
