@@ -14,24 +14,27 @@ import asyncio
 import logging
 
 from general_thread import ProgressThread, MultiThreadLoader, StockInfoPatcher
+import template
 
 
 def init():
     logging.basicConfig(
-        filename='log.txt',
+        filename=template.get_logging_path(),
         format='%(asctime)s [%(levelname)s] %(message)s',
         level=logging.INFO,
         encoding='utf-8'
     )
-    if not path.exists('../channels'):
-        mkdir('../channels')
-    if not path.exists('../data'):
-        mkdir('../data')
-    if not path.exists('../pools'):
-        mkdir('../pools')
-    if not path.exists('../strategies'):
-        mkdir('../strategies')
-    if not path.exists('../configure.json'):
+    if not path.exists(template.get_channel_path()):
+        mkdir(template.get_channel_path())
+    if not path.exists(template.get_data_path()):
+        mkdir(template.get_data_path())
+    if not path.exists(template.get_pool_path()):
+        mkdir(template.get_pool_path())
+    if not path.exists(template.get_pool_path() + '.cache/'):
+        mkdir(template.get_pool_path() + '.cache/')
+    if not path.exists(template.get_strategy_path()):
+        mkdir(template.get_strategy_path())
+    if not path.exists(template.get_configure_path()):
         cfg = {
             'pool': '',
             'channel': '',
@@ -65,9 +68,9 @@ def load_pkl(filename: str):
 
 
 def load_config():
-    if not path.exists('../configure.json'):
+    if not path.exists(template.get_configure_path()):
         return {}
-    fp = open('../configure.json')
+    fp = open(template.get_configure_path())
     res = json.load(fp)
     fp.close()
     return res
@@ -76,7 +79,7 @@ def load_config():
 def save_config(cfg: dict):
     ori = load_config()
     if cfg != ori:
-        fp = open('../configure.json', 'w+')
+        fp = open(template.get_configure_path(), 'w+')
         json.dump(cfg, fp)
         fp.close()
 
@@ -236,6 +239,10 @@ async def get_stocks(session, sem, url, s, p, fs, ua):
 
 
 def get_stock_list(fs):
+    pt = template.get_pool_path() + '.cache/' + fs[3:].replace(':', '')
+    if path.exists(pt) and path.getsize(pt) and path.getmtime(pt) - time.time() > -86400:
+        with open(pt, 'rb') as fp:
+            return pickle.load(fp)
     ua = get_user_agent()
     url = 'http://{}.push2.eastmoney.com/api/qt/clist/get?pn={}&pz={}&po=1&np=1&fltt=2&invt=2&fid=f3&{}&fields=f12,f13,f14'
     session = requests.Session()
@@ -271,6 +278,8 @@ def get_stock_list(fs):
     for i in res:
         for j in json.loads(i)['data']['diff']:
             lis.append(f'{j["f13"]}.{j["f12"]}')
+    with open(pt, 'wb') as fp:
+        pickle.dump(lis, fp)
     return lis
 
 

@@ -51,6 +51,22 @@ def get_logging_path():
     return 'log.txt'
 
 
+def get_pool_path():
+    return '../pools/'
+
+
+def get_channel_path():
+    return '../channels/'
+
+
+def get_data_path():
+    return '../data/'
+
+
+def get_configure_path():
+    return '../configure.json'
+
+
 class CommonPool:
     refer = {
         '** 沪深主板 **': 'fs=m:0+t:6+f:!2,m:1+t:2+f:!2',
