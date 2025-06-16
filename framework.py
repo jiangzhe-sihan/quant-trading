@@ -114,6 +114,7 @@ class KLine:
         self.close = src['close']  # 收盘价
         self.volume = src['volume']  # 成交量
         self.amount = src.get('amount')  # 成交额
+        self.shares = src.get('shares')  # 流通股本
         self.hs = src.get('hs')  # 换手
         self.previous: KLine | None = None  # 上一日k
         self.next: KLine | None = None  # 下一日k
@@ -194,6 +195,8 @@ class KLine:
     @property
     def market_value(self):
         """市值"""
+        if self.shares is not None:
+            return self.close * self.shares
         res = 100 * self.volume * self.close / np.float32(self.hs)
         if self.code.startswith('s'):
             res *= 100
@@ -614,7 +617,7 @@ class KLine:
         res['pct_change'] = 100 * self.get_series('increase')
         res['last_close'] = self.get_series('last_close')
         res['amount'] = self.get_series('amount')
-        res['hs'] = self.get_series('hs')
+        res['hs'] = round(self.get_series('hs'), 2)
         res['lz'] = self.get_series('market_value')
         adp = pd.DataFrame()
         adp['ma20'] = self.ema(20, res['close'])

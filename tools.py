@@ -5,8 +5,6 @@ import re
 import time
 import winreg
 
-from tkinter.messagebox import askyesno
-
 from os import path, mkdir
 from typing import Iterable
 
@@ -15,9 +13,7 @@ import aiohttp
 import asyncio
 import logging
 
-import webbrowser
-
-from general_thread import ProgressThread, MultiThreadLoader
+from general_thread import ProgressThread, MultiThreadLoader, StockInfoPatcher
 
 
 def init():
@@ -150,7 +146,7 @@ async def aio_get(session: aiohttp.ClientSession, url: str, sem: asyncio.Semapho
                         resp.close()
                         raise e
             except aiohttp.ServerDisconnectedError:
-                await asyncio.sleep(1)
+                await asyncio.sleep(5)
                 continue
     if sem is not None:
         async with sem:
@@ -216,6 +212,15 @@ def print_list(li: Iterable, col: int):
         temp += 1
     print()
     print(']')
+
+
+def get_stock_info(codes: list):
+    tasks = [StockInfoPatcher(i) for i in codes]
+    for i in tasks:
+        i.start()
+    for i in tasks:
+        i.join()
+    return list(map(lambda x: x.res, tasks))
 
 
 async def get_stocks(session, sem, url, s, p, fs, ua):

@@ -4,7 +4,7 @@ import threading
 from concurrent.futures import ProcessPoolExecutor
 from os import path, mkdir, walk, remove
 
-from framework import Market, InvestorTest
+from framework import Market
 import random
 from configure import *
 from backtest import run_backtest
@@ -214,6 +214,21 @@ class MultiThreadLoader(ProgressThread):
         for td in self._tds:
             td.join()
         return [td.res for td in self._tds]
+
+
+class StockInfoPatcher(threading.Thread):
+    def __init__(self, code):
+        super().__init__()
+        self._code = code
+        self.daemon = True
+        self.res = None
+
+    def run(self):
+        import yfinance as yf
+        shares = yf.Ticker(self._code).fast_info['shares']
+        name = yf.Ticker(self._code).info['shortName']
+        symbol = yf.Ticker(self._code).info['symbol']
+        self.res = shares, name, symbol
 
 
 class PlotThread:
