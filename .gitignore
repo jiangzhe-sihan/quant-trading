@@ -1,5 +1,6 @@
 src/
 data/
+pools/.cache/
 .idea
 configure.json
 .gitignore
