@@ -15,10 +15,7 @@ def func(pool, stime, ctime, callback):
     import time
     from random import randint
     import re
-    import asyncio
     ua = get_user_agent()
-    ut = ''.join([f'{randint(0,65535):4x}' for _ in range(8)])
-    tm = time.time_ns() // 1000000
 
     async def get_kline(session, sem, scode):
         host = 'push2his.eastmoney.com'
@@ -31,6 +28,8 @@ def func(pool, stime, ctime, callback):
         else:
             secid += s[0] + '.'
         secid += s[1]
+        ut = ''.join([f'{randint(0,65535):4x}' for _ in range(8)])
+        tm = time.time_ns() // 1000000
         params = {
             'cb': f'jsonp{tm}',
             'secid': secid,
@@ -49,30 +48,30 @@ def func(pool, stime, ctime, callback):
             sem,
             headers={
                 'User-Agent': ua,
-                'Referer': 'http://quote.eastmoney.com/',
+                'Referer': f'http://quote.eastmoney.com/{s[1]}.html',
                 'Host': host
             },
             params=params
         )
-        await asyncio.sleep(.5)
         if callback is not None:
             ret = callback()
             if ret != 0:
                 raise SystemError('download aborted.')
         return r, scode
     loop = new_event_loop()
-    t = 50
-    # sessions = [get_aio_session() for _ in range(t)]
-    session = get_aio_session()
+    t = 30
     sem = create_semaphore(t)
-    # es, er = len(pool) // t, len(pool) % t
-    # es += 1 if er else 0
-    # task = [get_kline(sessions[(i - 1) // es], sem, pool[i]) for i in range(len(pool))]
-    task = [get_kline(session, sem, pool[i]) for i in range(len(pool))]
-    task_res = loop.run_until_complete(gather(*task))
-    # for session in sessions:
-    #     loop.run_until_complete(session.close())
-    loop.run_until_complete(session.close())
+    task_res = []
+    gc = 200
+    for i in range(0, len(pool), gc):
+        session = get_aio_session()
+        end = i + gc
+        if end > len(pool):
+            end = len(pool)
+        task = [get_kline(session, sem, pool[i]) for i in range(i, end)]
+        task_res.extend(loop.run_until_complete(gather(*task)))
+        loop.run_until_complete(session.close())
+        time.sleep(60)
     loop.close()
     res = {}
     li_unquery = []
