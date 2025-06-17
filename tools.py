@@ -221,6 +221,7 @@ def get_stock_info(codes: list):
     tasks = [StockInfoPatcher(i) for i in codes]
     for i in tasks:
         i.start()
+        time.sleep(.1)
     for i in tasks:
         i.join()
     return list(map(lambda x: x.res, tasks))

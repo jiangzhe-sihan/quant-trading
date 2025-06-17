@@ -222,12 +222,16 @@ class StockInfoPatcher(threading.Thread):
         self._code = code
         self.daemon = True
         self.res = None
+        self._lock = threading.Lock()
+        self._ticker = None
 
     def run(self):
         import yfinance as yf
-        shares = yf.Ticker(self._code).fast_info['shares']
-        name = yf.Ticker(self._code).info['shortName']
-        symbol = yf.Ticker(self._code).info['symbol']
+        self._ticker = yf.Ticker(self._code)
+        with self._lock:
+            shares = self._ticker.fast_info['shares']
+            name = self._ticker.info['shortName']
+            symbol = self._ticker.info['symbol']
         self.res = shares, name, symbol
 
 
