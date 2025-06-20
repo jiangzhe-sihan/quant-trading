@@ -18,7 +18,7 @@ def download_data(chn: Script, pool: list[str],
 
 
 def write_data(pool: list[str],
-               res: dict[str, list[dict[str, str | int | float]]],
+               res: dict[str, list[dict[str, str | int | float | datetime.datetime]]],
                save_path: str,
                callback: FunctionType = None):
     if not path.exists(save_path):
@@ -45,6 +45,9 @@ def write_data(pool: list[str],
         k = k.replace('*', '+')
         k = re.sub(r'[\\/:*?"<>|]', ' ', k)
         fp = open(save_path + k + '.json', 'w+')
+        for kl in v:
+            if isinstance(kl['date'], datetime.datetime):
+                kl['date'] = kl['date'].strftime('%Y-%m-%d')
         json.dump(v, fp)
         fp.close()
         if callback is not None:
