@@ -279,7 +279,7 @@ def get_stock_list(fs):
         with open(pt, 'rb') as fp:
             return pickle.load(fp)
     ua = get_user_agent()
-    url = 'http://{}.push2.eastmoney.com/api/qt/clist/get?pn={}&pz={}&po=1&np=1&fltt=2&invt=2&fid=f3&{}&fields=f12,f13,f14,f39'
+    url = 'http://{}.push2.eastmoney.com/api/qt/clist/get?pn={}&pz={}&po=1&np=1&fltt=2&invt=2&fid=f3&{}&fields=f14,f12,f13,f39'
     session = requests.Session()
     s = 1
     p = 100
