@@ -216,25 +216,6 @@ class MultiThreadLoader(ProgressThread):
         return [td.res for td in self._tds]
 
 
-class StockInfoPatcher(threading.Thread):
-    def __init__(self, code):
-        super().__init__()
-        self._code = code
-        self.daemon = True
-        self.res = None
-        self._lock = threading.Lock()
-        self._ticker = None
-
-    def run(self):
-        import yfinance as yf
-        self._ticker = yf.Ticker(self._code)
-        with self._lock:
-            shares = self._ticker.fast_info['shares']
-            name = self._ticker.info['shortName']
-            symbol = self._ticker.info['symbol']
-        self.res = shares, name, symbol
-
-
 class PlotThread:
     @staticmethod
     def update():

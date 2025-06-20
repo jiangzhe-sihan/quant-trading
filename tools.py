@@ -13,8 +13,9 @@ import aiohttp
 import asyncio
 import logging
 
-from general_thread import ProgressThread, MultiThreadLoader, StockInfoPatcher
+from general_thread import ProgressThread, MultiThreadLoader
 import template
+import numpy
 
 
 def init():
@@ -217,14 +218,46 @@ def print_list(li: Iterable, col: int):
     print(']')
 
 
-def get_stock_info(codes: list):
-    tasks = [StockInfoPatcher(i) for i in codes]
-    for i in tasks:
-        i.start()
-        time.sleep(.1)
-    for i in tasks:
-        i.join()
-    return list(map(lambda x: x.res, tasks))
+STOCK_INFO = {}
+STOCK_UNCOVERED = []
+
+
+def get_stock_info(code: str):
+    nlpt = template.get_pool_path() + '.cache/nl'
+    if not STOCK_INFO:
+        if path.exists(nlpt) and path.getsize(nlpt) and path.getmtime(nlpt) - time.time() > -86400:
+            with open(nlpt, 'rb') as fp:
+                STOCK_INFO.update(pickle.load(fp))
+    mkt, symbol = code.split('.')
+    if symbol in STOCK_INFO:
+        return STOCK_INFO[symbol]
+    if code in STOCK_UNCOVERED:
+        gc = 50
+        ua = get_user_agent()
+        session = requests.Session()
+        url = 'https://push2.eastmoney.com/api/qt/ulist/get?fltt=1&invt=2&fields=f14,f12,f13,f39&{}&pn=1&np=1&pz=50'
+        for i in range(0, len(STOCK_UNCOVERED), gc):
+            dis = {}
+            fs = f'secids={",".join(STOCK_UNCOVERED[i:i+gc])}'
+            resp = session.get(url.format(fs), headers={'User-Agent': ua, 'Host': 'push2.eastmoney.com'})
+            for j in json.loads(resp.text)['data']['diff']:
+                dis[j['f12']] = j['f14'], int(j['f39']) if j['f39'] != '-' else numpy.nan
+            STOCK_INFO.update(dis)
+        with open(nlpt, 'wb') as fp:
+            pickle.dump(STOCK_INFO, fp)
+        STOCK_UNCOVERED.clear()
+        return STOCK_INFO[symbol]
+    if mkt.startswith('s'):
+        fs = template.CommonPool.refer['** 沪深京全A **']
+    elif mkt == '116':
+        fs = template.CommonPool.refer['** 港  股 **']
+    else:
+        fs = 'fs=m:105,m:106,m:107'
+    get_stock_list(fs)
+    if symbol in STOCK_INFO:
+        return STOCK_INFO[symbol]
+    STOCK_UNCOVERED.append(code)
+    return code, numpy.nan
 
 
 async def get_stocks(session, sem, url, s, p, fs, ua):
@@ -241,26 +274,34 @@ async def get_stocks(session, sem, url, s, p, fs, ua):
 
 def get_stock_list(fs):
     pt = template.get_pool_path() + '.cache/' + fs[3:].replace(':', '')
+    nlpt = template.get_pool_path() + '.cache/nl'
     if path.exists(pt) and path.getsize(pt) and path.getmtime(pt) - time.time() > -86400:
         with open(pt, 'rb') as fp:
             return pickle.load(fp)
     ua = get_user_agent()
-    url = 'http://{}.push2.eastmoney.com/api/qt/clist/get?pn={}&pz={}&po=1&np=1&fltt=2&invt=2&fid=f3&{}&fields=f12,f13,f14'
+    url = 'http://{}.push2.eastmoney.com/api/qt/clist/get?pn={}&pz={}&po=1&np=1&fltt=2&invt=2&fid=f3&{}&fields=f12,f13,f14,f39'
     session = requests.Session()
     s = 1
-    p = 50
+    p = 100
     n = random.randint(1, 99)
-    res = session.get(url.format(n, s, p, fs), headers={'User-Agent': ua, 'host': f'{n}.push2.eastmoney.com'})
+    res = session.get(url.format(n, s, p, fs), headers={'User-Agent': ua, 'Host': f'{n}.push2.eastmoney.com'})
     lis = []
+    dis = {}
     for i in res.json()['data']['diff']:
         lis.append(f'{i["f13"]}.{i["f12"]}')
+        dis[i['f12']] = i['f14'], int(i['f39']) if i['f39'] != '-' else numpy.nan
     count = res.json()['data']['total']
     if count <= p:
+        with open(pt, 'wb') as fp:
+            pickle.dump(lis, fp)
+        STOCK_INFO.update(dis)
+        with open(nlpt, 'wb') as fp:
+            pickle.dump(STOCK_INFO, fp)
         return lis
     e, r = count // p, count % p
     if r:
         e += 1
-    loop = get_event_loop()
+    loop = new_event_loop()
     _t = 50
     es, rs = e // _t, e % _t
     if rs:
@@ -279,8 +320,12 @@ def get_stock_list(fs):
     for i in res:
         for j in json.loads(i)['data']['diff']:
             lis.append(f'{j["f13"]}.{j["f12"]}')
+            dis[j['f12']] = j['f14'], int(j['f39']) if j['f39'] != '-' else numpy.nan
     with open(pt, 'wb') as fp:
         pickle.dump(lis, fp)
+    STOCK_INFO.update(dis)
+    with open(nlpt, 'wb') as fp:
+        pickle.dump(STOCK_INFO, fp)
     return lis
 
 
