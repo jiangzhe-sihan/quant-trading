@@ -247,7 +247,7 @@ def get_stock_info(code: str):
             pickle.dump(STOCK_INFO, fp)
         STOCK_UNCOVERED.clear()
         return STOCK_INFO[symbol]
-    if mkt.startswith('s'):
+    if mkt in ('0', '1'):
         fs = template.CommonPool.refer['** 沪深京全A **']
     elif mkt == '116':
         fs = template.CommonPool.refer['** 港  股 **']
