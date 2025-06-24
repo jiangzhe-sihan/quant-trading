@@ -265,7 +265,7 @@ async def get_stocks(session, sem, url, s, p, fs, ua):
     res = await aio_get(
         session, url.format(n, s, p, fs), sem,
         headers={
-            'User-Agent': ua, 'host': f'{n}.push2.eastmoney.com',
+            'User-Agent': ua, 'Host': f'{n}.push2.eastmoney.com',
             'Referer': 'https://quote.eastmoney.com/center/gridlist.html',
         }
     )
