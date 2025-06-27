@@ -261,11 +261,10 @@ def get_stock_info(code: str):
 
 
 async def get_stocks(session, sem, url, s, p, fs, ua):
-    n = random.randint(1, 99)
     res = await aio_get(
-        session, url.format(n, s, p, fs), sem,
+        session, url.format(s, p, fs), sem,
         headers={
-            'User-Agent': ua, 'Host': f'{n}.push2.eastmoney.com',
+            'User-Agent': ua, 'Host': 'push2.eastmoney.com',
             'Referer': 'https://quote.eastmoney.com/center/gridlist.html',
         }
     )
@@ -279,12 +278,11 @@ def get_stock_list(fs):
         with open(pt, 'rb') as fp:
             return pickle.load(fp)
     ua = get_user_agent()
-    url = 'http://{}.push2.eastmoney.com/api/qt/clist/get?pn={}&pz={}&po=1&np=1&fltt=2&invt=2&fid=f3&{}&fields=f14,f12,f13,f39'
+    url = 'http://push2.eastmoney.com/api/qt/clist/get?pn={}&pz={}&po=1&np=1&fltt=2&invt=2&fid=f3&{}&fields=f14,f12,f13,f39'
     session = requests.Session()
     s = 1
     p = 100
-    n = random.randint(1, 99)
-    res = session.get(url.format(n, s, p, fs), headers={'User-Agent': ua, 'Host': f'{n}.push2.eastmoney.com'})
+    res = session.get(url.format(s, p, fs), headers={'User-Agent': ua, 'Host': 'push2.eastmoney.com'})
     lis = []
     dis = {}
     for i in res.json()['data']['diff']:
