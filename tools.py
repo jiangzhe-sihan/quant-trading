@@ -231,6 +231,7 @@ def get_stock_info(code: str):
     mkt, symbol = code.split('.')
     if symbol in STOCK_INFO:
         return STOCK_INFO[symbol]
+    print(1, code)
     if code in STOCK_UNCOVERED:
         gc = 50
         ua = get_user_agent()
@@ -253,6 +254,7 @@ def get_stock_info(code: str):
         fs = template.CommonPool.refer['** 港  股 **']
     else:
         fs = 'fs=m:105,m:106,m:107'
+    print(2, code)
     get_stock_list(fs)
     if symbol in STOCK_INFO:
         return STOCK_INFO[symbol]
@@ -287,7 +289,7 @@ def get_stock_list(fs):
     dis = {}
     for i in res.json()['data']['diff']:
         lis.append(f'{i["f13"]}.{i["f12"]}')
-        dis[i['f12']] = i['f14'], int(i['f39']) if i['f39'] != '-' else numpy.nan
+        dis[i['f12'].upper()] = i['f14'], int(i['f39']) if i['f39'] != '-' else numpy.nan
     count = res.json()['data']['total']
     if count <= p:
         with open(pt, 'wb') as fp:
@@ -318,7 +320,7 @@ def get_stock_list(fs):
     for i in res:
         for j in json.loads(i)['data']['diff']:
             lis.append(f'{j["f13"]}.{j["f12"]}')
-            dis[j['f12']] = j['f14'], int(j['f39']) if j['f39'] != '-' else numpy.nan
+            dis[j['f12'].upper()] = j['f14'], int(j['f39']) if j['f39'] != '-' else numpy.nan
     with open(pt, 'wb') as fp:
         pickle.dump(lis, fp)
     STOCK_INFO.update(dis)
