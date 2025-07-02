@@ -231,7 +231,6 @@ def get_stock_info(code: str):
     mkt, symbol = code.split('.')
     if symbol in STOCK_INFO:
         return STOCK_INFO[symbol]
-    print(1, code)
     if code in STOCK_UNCOVERED:
         gc = 50
         ua = get_user_agent()
@@ -254,7 +253,6 @@ def get_stock_info(code: str):
         fs = template.CommonPool.refer['** 港  股 **']
     else:
         fs = 'fs=m:105,m:106,m:107'
-    print(2, code)
     get_stock_list(fs)
     if symbol in STOCK_INFO:
         return STOCK_INFO[symbol]
