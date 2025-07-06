@@ -114,7 +114,7 @@ class KLine:
         self.close = src['close']  # 收盘价
         self.volume = src['volume']  # 成交量
         self.amount = src.get('amount')  # 成交额
-        self.shares = src.get('shares', 0)  # 流通股本
+        self.shares = src.get('shares')  # 流通股本
         self.hs = src.get('hs', 0)  # 换手
         self.previous: KLine | None = None  # 上一日k
         self.next: KLine | None = None  # 下一日k
