@@ -37,7 +37,7 @@ def func(self):
             stick = (c / o - 1) / (inc - 1)
             bl = vol / v.ref(1, vol)
             boom = (bl > 1.3) & (inc - 1 > .02) & (stick > .5)
-            plmt = 10 if v.code.startswith('116') else 20
+            plmt = 10 if v.code.startswith('HK') else 20
             self.static[v.code] = (v.max(pwm1, pwm2) > 1.1) & (vrsi > 46) & (c > plmt) & boom & (v.ref(1, v.exist(boom, 10)))
         if self.static[v.code][v.date] and v.amount > 50000000:
             self.li_buy.add(k)

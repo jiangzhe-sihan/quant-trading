@@ -9,17 +9,16 @@ prop = [
 
 
 def func(self):
-    self.set_price_buy('low')
+    self.set_price_buy('open')
     self.set_price_sell('high')
     for k, v in self.market.tell.items():
         # write your strategy here
         # `self.li_buy.add(k)` for buy
         # `self.li_sell.add(k)` for sell
         n = 20
-        nr = 10
+        nr = 12
         if v.code not in self.static:
             c = v.get_series('close')
-            o = v.get_series('open')
             vol = v.get_series('volume')
             inc = c / v.ref(1, c)
             vinc = vol / v.ref(1, vol)
@@ -28,11 +27,14 @@ def func(self):
             power = up + down
             pwm1 = v.ema(3, power)
             pwm2 = v.ema(14, power)
-            difp = power - v.ref(1, power)
-            vrsi = 100 * v.ema(nr, v.sma(nr, 1, v.max(difp, 0)) / v.sma(nr, 1, abs(difp)))
-            stick = (c / o - 1) / (inc - 1)
-            bl = vol / v.ref(1, vol)
-            boom = (bl > 1.3) & (inc - 1 > .01) & (stick > .5)
-            self.static[v.code] = (v.max(pwm1, pwm2) > 1.1) & (vrsi > 46) & (c > 20) & boom
-        if self.static[v.code][v.date] and v.market_value > 100000000000:
+            cond1 = v.between(v.max(pwm1, pwm2), 1, 1.4)
+            mid = v.ema(n, c)
+            upper = mid + 2 * v.std(n, c)
+            lower = mid - 2 * v.std(n, c)
+            width = upper - lower
+            cond2 = v.every(width < v.ref(1, width), nr)
+            mvol = v.ma(n, vol)
+            cond3 = v.every(mvol > v.ref(1, mvol), nr)
+            self.static[v.code] = cond1 & cond2 & cond3 & v.between(c, upper, lower)
+        if self.static[v.code][v.date]:
             self.li_buy.add(k)

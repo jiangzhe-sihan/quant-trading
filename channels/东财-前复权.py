@@ -62,7 +62,7 @@ def func(pool, stime, ctime, callback):
     t = 30
     sem = create_semaphore(t)
     task_res = []
-    gc = 200
+    gc = 400
     for i in range(0, len(pool), gc):
         session = get_aio_session()
         end = i + gc
@@ -71,7 +71,7 @@ def func(pool, stime, ctime, callback):
         task = [get_kline(session, sem, pool[i]) for i in range(i, end)]
         task_res.extend(loop.run_until_complete(gather(*task)))
         loop.run_until_complete(session.close())
-        time.sleep(60)
+        time.sleep(120)
     loop.close()
     res = {}
     li_unquery = []
