@@ -33,7 +33,7 @@ def func(pool, stime, ctime, callback):
         src = yf.download(tasks, start=pstime, end=pctime, group_by='ticker')
         res = []
         for code in src.columns.levels[0]:
-            res.append((round(src[code], 3), code))
+            res.append((round(src[code].dropna(), 3), code))
             if callback is not None:
                 ret = callback()
                 if ret != 0:
