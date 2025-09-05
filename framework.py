@@ -405,6 +405,9 @@ class KLine:
             return c1 & c2
         return c1 and c2
 
+    def IF(self, cond, vtrue, vfalse):
+        return vtrue.where(cond, vfalse)
+
     def rsi(self, n: int):
         """计算rsi指标值"""
         idf = f'rsi_{n}'
