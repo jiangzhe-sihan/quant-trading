@@ -406,6 +406,7 @@ class KLine:
         return c1 and c2
 
     def IF(self, cond, vtrue, vfalse):
+        """满足条件时输出前值，否则输出后值"""
         return vtrue.where(cond, vfalse)
 
     def rsi(self, n: int):
