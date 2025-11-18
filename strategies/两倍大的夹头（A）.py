@@ -37,6 +37,13 @@ def func(self):
             stick = (c / o - 1) / (inc - 1)
             bl = vol / v.ref(1, vol)
             boom = (bl > 1.3) & (inc - 1 > .02) & (stick > .5)
-            self.static[v.code] = v.between(v.max(pwm1, pwm2), 1, 1.5) & (vrsi > 46) & (c > 23) & boom & (v.ref(2, v.exist(boom, 3))) & ~(v.count(bl > 1.3, 4) > 1) & (bl < 3.5)
-        if self.static[v.code][v.date]:
+            plmt = 5
+            incp = inc - 1
+            a = v.ref(1, incp) + incp
+            b = v.ref(1, a) + a
+            lc = v.ref(1, b) + b
+            d = v.std(3, lc)
+            e = v.sma(60, 1, d)
+            self.static[v.code] = (v.max(pwm1, pwm2) > 1.1) & (vrsi > 46) & (c > plmt) & boom & (v.ref(1, v.exist(boom, 10))) & v.exist(v.every(d < e, 5), 5)
+        if self.static[v.code][v.date] and v.amount > 50000000:
             self.li_buy.add(k)
