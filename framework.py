@@ -624,8 +624,11 @@ class KLine:
         res['hs'] = round(self.get_series('hs'), 2)
         res['lz'] = self.get_series('market_value')
         adp = pd.DataFrame()
-        adp['ma20'] = self.ema(20, res['close'])
-        adp['ma60'] = self.ema(60, res['close'])
+        adp['ma5'] = self.ma(5, res['close'])
+        adp['ma10'] = self.ma(10, res['close'])
+        adp['ma20'] = self.ma(20, res['close'])
+        adp['ma30'] = self.ma(30, res['close'])
+        adp['ma60'] = self.ma(60, res['close'])
         self._cache[idf] = res, adp
         return res, adp
 
