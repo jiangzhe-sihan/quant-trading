@@ -351,10 +351,11 @@ class SceneBacktest(Scene):
         mid_win = self._player.mid_win
         mid_lose = self._player.mid_lose
         exp_inc = self._player.exp_inc
-        count = min(self._player.count, len(self._market))
-        _wr = pow(win_rate, log(max(1, self._player.count / len(self._market))) + 1)
+        count = min(self._player.count, 3)  # 连续交易次数
+        _wr = pow(win_rate, log(max(1, min(5, self._player.count / len(self._market)))) + 1)  # 随机选股胜率
+        lr = min(exp_inc, avg_lose)
         try:
-            exp_value = pow(1 + exp_inc, count * _wr) * pow(1 + ((min(mid_lose, avg_lose) + max_down) / 2 + max_lose) / 2, count * (1 - _wr))
+            exp_value = pow(1 + exp_inc, count * _wr) * pow(1 + lr, count * (1 - _wr))
         except OverflowError:
             exp_value = 0
         # 显示信息

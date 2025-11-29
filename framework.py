@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import os
 import sys
 from math import ceil
@@ -185,12 +186,12 @@ class KLine:
     @property
     def daily_limit(self):
         """一字涨停"""
-        return self.increase >= .04 and self.close == self.high == self.open
+        return self.increase >= .04 and self.close == self.high == self.open == self.low
 
     @property
     def limit_down(self):
         """一字跌停"""
-        return self.increase <= -.04 and self.close == self.low == self.open
+        return self.increase <= -.04 and self.close == self.low == self.open == self.high
 
     @property
     def market_value(self):
@@ -1454,8 +1455,12 @@ class InvRater:
         avg_inc = (self.avg_win + 1) * (self.avg_lose + 1)
         mid_inc = (self.mid_win + 1) * (self.mid_lose + 1)
         exp_win = (avg_inc + mid_inc) / 2 - 1
-        exp_lose = ((min(self.avg_lose, self.mid_lose) + self.max_down) / 2 + self.max_lose) / 2
-        return exp_win * self.win_rate + exp_lose * (1 - self.win_rate)
+        exp_lose = (self.avg_lose + self.mid_lose) / 2
+        a = exp_win * self.win_rate
+        b = exp_lose * (1 - self.win_rate)
+        c = self.max_win * pow(self.win_rate, math.log(self.wins + 1))
+        d = (self.max_lose + self.max_down) / 2 * pow(1 - self.win_rate, math.log(self.loses + 1))
+        return a + b + c + d
 
     @property
     def single_exp_inc(self):
