@@ -42,8 +42,7 @@ def func(self):
             czt = h >= v.zt_price(v.ref(1, c), .1)
             # mvol = v.ma(5, vol)
             # lb = vol / v.ref(1, mvol)
-            self.static[v.code] = v.ref(1,
-                zt & ~v.ref(1, czt) & buy2 & ((v.count(buy3, nr) / nr > .6) | v.cross(d, e)) & v.exist(v.every(d < e, 5),5)
-            )
+            cond = zt & ~v.ref(1, czt) & buy2 & ((v.count(buy3, nr) / nr > .6) | v.cross(d, e)) & v.exist(v.every(d < e, 5),5)
+            self.static[v.code] = v.ref(1, cond) & (vol > v.ref(1, vol))
         if self.static[v.code][v.date]:
             self.li_buy.add(k)

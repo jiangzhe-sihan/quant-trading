@@ -44,6 +44,6 @@ def func(self):
             lc = v.ref(1, b) + b
             d = v.std(3, lc)
             e = v.sma(60, 1, d)
-            self.static[v.code] = (v.max(pwm1, pwm2) > 1.1) & (vrsi > 46) & (c > plmt) & boom & (v.ref(1, v.exist(boom, 10))) & v.exist(v.every(d < e, 5), 5)
+            self.static[v.code] = (v.max(pwm1, pwm2) > 1.1) & (vrsi > 46) & (c > plmt) & boom & (v.ref(1, v.exist(boom, 10))) & v.exist(v.every(d < e, 4), 3)
         if self.static[v.code][v.date] and v.amount > 50000000:
             self.li_buy.add(k)
