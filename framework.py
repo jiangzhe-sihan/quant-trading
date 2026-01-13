@@ -392,8 +392,8 @@ class KLine:
 
     def between(self, item, a, b):
         """判断值是否介于两个数之间"""
-        c1 = item > self.min(a, b)
-        c2 = item < self.max(a, b)
+        c1 = item >= self.min(a, b)
+        c2 = item <= self.max(a, b)
         if isinstance(c1, pd.Series):
             return c1 & c2
         return c1 and c2
