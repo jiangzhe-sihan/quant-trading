@@ -80,6 +80,7 @@ class SceneBacktest(Scene):
         self._exp_inc = 0
         self._exp_value = 0
         self._best_span = 0
+        self._wlb_rate = 0
 
     def _switch_pause_able(self):
         if not self._pause_able:
@@ -362,7 +363,9 @@ class SceneBacktest(Scene):
         self.stdio.write('backtest completed.\n')
         self.stdio.write('单位净值:  {}  {}\n'.format(self._player.get_value(), self._get_udc(value, '_value')))
         self.stdio.write('胜率:       {:.2f} %  {}\n'.format(win_rate * 100, self._get_udc(win_rate, '_win_rate')))
-        self.stdio.write('盈亏比:    {}：{}\n'.format(self._player.wins, self._player.loses))
+        wl_rate = abs(avg_win / avg_lose) if avg_lose else 0
+        wlb_rate = 1 / (1 + wl_rate)
+        self.stdio.write('盈亏平衡点胜率：{:.2f} %  {}\n'.format(100 * wlb_rate, self._get_udc(wlb_rate, '_wlb_rate')))
         self.stdio.write('累计收益率: {:.4f}  {}\n'.format(sum_inc, self._get_udc(sum_inc, '_sum_inc')))
         self.stdio.write('最大正收益: {:.2f} %  {}\n'.format(max_win * 100, self._get_udc(max_win, '_max_inc')))
         self.stdio.write('最大负收益: {:.2f} %  {}\n'.format(max_lose * 100, self._get_udc(max_lose, '_max_lose')))
@@ -379,7 +382,7 @@ class SceneBacktest(Scene):
         # 更新记录
         self._value, self._win_rate, self._sum_inc, self._max_down = value, win_rate, sum_inc, max_down
         self._max_inc, self._max_lose, self._avg_inc, self._avg_lose = max_win, max_lose, avg_win, avg_lose
-        self._mid_inc, self._mid_lose, self._exp_inc = mid_win, mid_lose, exp_inc
+        self._mid_inc, self._mid_lose, self._exp_inc, self._wlb_rate = mid_win, mid_lose, exp_inc, wlb_rate
         self._best_span = bs_value
         self._exp_value = exp_value if isinstance(exp_value, (float, int)) else 0
         # 添加查看按钮
